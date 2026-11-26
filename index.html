@@ -1,0 +1,1891 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Telemetry Analysis Practice Lab</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --text:#1d2330; --muted:#5d6678; --line:#e1e5ec;
+  --accent:#0f6cbd; --accent-soft:#e6f0fa; --ok:#127a3c; --ok-soft:#e5f5eb; --bad:#b42318; --bad-soft:#fdecea;
+  --warn:#a35200; --warn-soft:#fdf1e3;
+  --code-bg:#0f1720; --code-text:#d6dde8;
+  --k:#7cc4ff; --s:#f2b880; --c:#7d8a9c; --d:#d7a6ff; --n:#9fe3a8; --t:#6fd6c9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1116; --panel:#161b22; --text:#e3e8ef; --muted:#9aa4b2; --line:#2a313c;
+    --accent:#4ea1f3; --accent-soft:#16283c; --ok:#4cc27a; --ok-soft:#13281c; --bad:#ff7b72; --bad-soft:#2d1615;
+    --warn:#f0b450; --warn-soft:#2b2112;
+    --code-bg:#0a0d12;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1116; --panel:#161b22; --text:#e3e8ef; --muted:#9aa4b2; --line:#2a313c;
+  --accent:#4ea1f3; --accent-soft:#16283c; --ok:#4cc27a; --ok-soft:#13281c; --bad:#ff7b72; --bad-soft:#2d1615;
+  --warn:#f0b450; --warn-soft:#2b2112;
+  --code-bg:#0a0d12;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+code,pre,textarea{font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace}
+.app{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+aside h1{font-size:18px;margin:0 8px 4px}
+aside .sub{color:var(--muted);font-size:13px;margin:0 8px 14px}
+.progress{height:6px;background:var(--line);border-radius:4px;margin:0 8px 6px;overflow:hidden}
+.progress>div{height:100%;background:var(--ok);width:0;transition:width .3s}
+.ptext{font-size:12px;color:var(--muted);margin:0 8px 14px}
+nav button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:none;color:var(--text);
+  padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px}
+nav button:hover{background:var(--accent-soft)}
+nav button.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav .num{flex:0 0 24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--muted)}
+nav button.done .num{background:var(--ok);border-color:var(--ok);color:#fff}
+nav .cnt{margin-left:auto;font-size:11px;color:var(--muted);font-weight:400}
+nav .group{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 10px 4px}
+.sidefoot{margin:18px 8px 0;display:grid;gap:10px;justify-items:start}
+.sidefoot a{font-size:13px;color:var(--accent)}
+.theme{font-size:13px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 10px;cursor:pointer}
+main{padding:32px 40px 80px;max-width:980px;width:100%}
+.tag{display:inline-block;font-size:12px;color:var(--accent);background:var(--accent-soft);padding:2px 10px;border-radius:20px;margin-bottom:8px}
+h2{font-size:28px;margin:0 0 8px}
+h3{font-size:19px;margin:28px 0 8px}
+p{margin:8px 0}
+.lead{color:var(--muted);font-size:17px}
+:not(pre)>code{background:var(--accent-soft);padding:1px 6px;border-radius:5px;font-size:.9em;overflow-wrap:anywhere}
+.codewrap{position:relative;margin:12px 0}
+pre{background:var(--code-bg);color:var(--code-text);padding:16px 18px;border-radius:10px;overflow:auto;font-size:14px;line-height:1.55;margin:0}
+.file{font-size:12px;color:var(--muted);margin:12px 0 -6px;font-family:Consolas,monospace}
+.copy{position:absolute;top:8px;right:8px;font-size:12px;background:#ffffff1a;color:#cfd8e3;border:0;border-radius:6px;padding:4px 9px;cursor:pointer}
+.copy:hover{background:#ffffff33}
+.tk{color:var(--k)} .ts{color:var(--s)} .tc{color:var(--c);font-style:italic} .td{color:var(--d)} .tn{color:var(--n)} .tt{color:var(--t)}
+.tdash{color:var(--c)}
+ul.tips,ol.tips{padding-left:20px} .tips li{margin:4px 0}
+table.ref{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+table.ref th,table.ref td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+table.ref th{background:var(--accent-soft);font-weight:600}
+.tablewrap{overflow-x:auto}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0;font-size:15px}
+.note.exam{border-left-color:var(--warn);background:var(--warn-soft)}
+.exercise{margin-top:30px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+.exercise h3{margin-top:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.exercise h3 .kind{font-size:12px;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:1px 10px}
+.exercise h3 .badge{font-size:12px;background:var(--ok);color:#fff;border-radius:20px;padding:2px 10px;display:none}
+.exercise.solved h3 .badge{display:inline-block}
+.exercise.solved{border-color:var(--ok)}
+textarea{width:100%;min-height:220px;background:var(--code-bg);color:var(--code-text);border:1px solid var(--line);border-radius:10px;
+  padding:14px;font-size:14px;line-height:1.55;resize:vertical;tab-size:2;outline:none;white-space:pre;overflow:auto}
+textarea.short{min-height:120px;white-space:pre-wrap}
+textarea:focus{border-color:var(--accent)}
+.edhelp{font-size:12px;color:var(--muted);margin:4px 0 0}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.small{padding:2px 9px;font-size:13px}
+.results{list-style:none;padding:0;margin:10px 0}
+.results li{padding:6px 12px;border-radius:7px;margin:4px 0;font-size:14px}
+.results li.pass{background:var(--ok-soft);color:var(--ok)}
+.results li.fail{background:var(--bad-soft);color:var(--bad)}
+.results li .sub{display:block;font-size:13px;margin:2px 0 0 18px;opacity:.9}
+.hint{display:none;background:var(--accent-soft);padding:10px 14px;border-radius:8px;font-size:15px;margin:8px 0}
+.why{display:none;border-left:3px solid var(--ok);background:var(--ok-soft);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:15px}
+.solution{display:none;margin:10px 0}
+.solution .solhead{font-size:13px;color:var(--muted);font-weight:600;margin:0 0 6px}
+/* choice */
+.opts{display:grid;gap:8px;margin:12px 0}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--bg)}
+.opt:hover{border-color:var(--accent)}
+.opt input{margin-top:5px;flex:0 0 auto}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+/* order */
+.order{list-style:none;padding:0;margin:12px 0;display:grid;gap:6px}
+.order li{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg)}
+.order li .pos{flex:0 0 24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:600}
+.order li .txt{flex:1}
+.order li .mv{display:flex;gap:4px}
+.order li.right{border-color:var(--ok);background:var(--ok-soft)}
+.order li.wrong{border-color:var(--bad);background:var(--bad-soft)}
+/* match */
+.match{width:100%;border-collapse:collapse;margin:12px 0;font-size:15px}
+.match td{border-bottom:1px solid var(--line);padding:8px 6px;vertical-align:middle}
+.match td:first-child{width:58%}
+.match select{width:100%;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:14px}
+.match tr.right td{background:var(--ok-soft)}
+.match tr.wrong td{background:var(--bad-soft)}
+/* fill */
+.fill{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0;line-height:2.3}
+.fill.mono{font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;font-size:14px;white-space:pre-wrap;line-height:2.2}
+.fill input{font:inherit;font-size:14px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);min-width:90px}
+.fill input.right{border-color:var(--ok);background:var(--ok-soft)}
+.fill input.wrong{border-color:var(--bad);background:var(--bad-soft)}
+/* lines */
+.lines{background:var(--code-bg);border-radius:10px;padding:8px 0;margin:12px 0;overflow:auto}
+.lines .ln{display:flex;gap:12px;padding:2px 14px;cursor:pointer;color:var(--code-text);font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;font-size:14px;white-space:pre;border-left:3px solid transparent}
+.lines .ln:hover{background:#ffffff12}
+.lines .ln .no{color:var(--c);user-select:none;min-width:20px;text-align:right}
+.lines .ln.sel{background:#f2b88026;border-left-color:var(--s)}
+.lines .ln.right{background:#4cc27a2e;border-left-color:var(--n)}
+.lines .ln.wrong{background:#ff7b7230;border-left-color:#ff7b72}
+.lines.prose .ln{font-family:inherit;white-space:normal}
+.navfoot{display:flex;justify-content:space-between;margin-top:30px}
+.menu{display:none}
+@media (max-width:820px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  aside{position:fixed;inset:0 30% 0 0;z-index:5;transform:translateX(-105%);transition:transform .2s;height:100vh}
+  aside.open{transform:none;box-shadow:0 0 40px #0006}
+  main{padding:16px 16px 60px}
+  .menu{display:inline-block;margin-bottom:12px}
+  h2{font-size:23px}
+  .match td{display:block;width:100% !important;border:0;padding:4px 6px}
+  .match tr{display:block;border-bottom:1px solid var(--line);padding:6px 0}
+}
+.schema{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:12px 0;font-size:13px}
+.schema .sname{font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;font-weight:700;color:var(--accent);margin-right:6px}
+.schema .col{font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+.schema .col i{font-style:normal;color:var(--muted);margin-left:5px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:12px}
+textarea.kqled{min-height:170px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside id="side">
+    <h1>Telemetry Analysis Lab</h1>
+    <p class="sub">AZ-400 · 5.2 Analyzing metrics and logs</p>
+    <div class="progress"><div id="bar"></div></div>
+    <p class="ptext" id="ptext"></p>
+    <nav id="nav"></nav>
+    <div class="sidefoot">
+      <button class="theme" id="themeBtn">Toggle theme</button>
+      <button class="theme" id="resetAllBtn">Reset progress</button>
+      <a href="../azure-pipelines-tutorial/index.html">Open the Azure Pipelines Practice Lab</a>
+      <a href="../bicep-tutorial/index.html">Open the Bicep Practice Lab</a>
+      <a href="../I.1%20-%20flow-of-work-trainer/index.html">Open the Flow of Work Lab</a>
+    </div>
+  </aside>
+  <main>
+    <button class="btn menu" id="menuBtn">☰ Modules</button>
+    <div id="content"></div>
+  </main>
+</div>
+
+<script>
+
+/* ===================================================================
+   MODULE DATA
+   Exercise types (all share: id, title, q, hint, why):
+     mc     options[], answer: index
+     multi  options[], answer: [indexes]
+     order  items[] in the CORRECT order (shown shuffled)
+     match  rows: [[left html, correct choice]], choices[]
+     fill   tpl with [[0]], [[1]]… blanks, blanks: [[accepted…]]  (first = shown in solution)
+     lines  code: [lines], answer: [line indexes]
+     kql    starter, checks: [{l, t: q => bool}], solution, cols?: exact-case names,
+            accept?: [equivalent answers that must pass], reject?: [answers that must fail]
+            (accept/reject are only used by the self-test)
+   =================================================================== */
+const S_REQUESTS = ["timestamp:datetime","name:string","url:string","duration:real (ms)","resultCode:string","success:bool","operation_Id:string","operation_ParentId:string","id:string","cloud_RoleName:string","user_Id:string","itemCount:int"];
+const S_DEPS = ["timestamp:datetime","name:string","target:string","type:string","data:string","duration:real (ms)","resultCode:string","success:bool","operation_Id:string","operation_ParentId:string","id:string","cloud_RoleName:string"];
+const S_EXC = ["timestamp:datetime","type:string","outerMessage:string","problemId:string","severityLevel:int","operation_Id:string","cloud_RoleName:string"];
+const S_TRACES = ["timestamp:datetime","message:string","severityLevel:int","operation_Id:string","cloud_RoleName:string","customDimensions:dynamic"];
+const S_PERF = ["TimeGenerated:datetime","Computer:string","ObjectName:string","CounterName:string","InstanceName:string","CounterValue:real"];
+
+const MODULES = [
+/* ================================================================ 1 */
+{
+  group:"Foundations",
+  title:"Metrics, logs & tables",
+  tag:"metrics vs logs · workspace-based Application Insights · table names",
+  intro:`Everything in this theme reads one of two kinds of Azure Monitor data. <b>Metrics</b> are lightweight numeric time series (CPU %, request count) that arrive in near real time and are charted in <b>metrics explorer</b>. <b>Logs</b> are rich records with many properties, stored in a <b>Log Analytics workspace</b> and queried with <b>KQL</b>. Application Insights (the APM feature of Azure Monitor) stores its telemetry in a workspace too.`,
+  sections:[
+    {h:"Metrics or logs?", after:`<div class="tablewrap"><table class="ref">
+<tr><th></th><th>Metrics</th><th>Logs</th></tr>
+<tr><td>Shape</td><td>Numeric value + timestamp + a few dimensions</td><td>Records with many typed columns (text, dynamic JSON, IDs)</td></tr>
+<tr><td>Latency</td><td>Near real time, ideal for fast alerts</td><td>Minutes from ingestion to query</td></tr>
+<tr><td>Tool</td><td>Metrics explorer, metric alerts</td><td>Log Analytics (Logs blade), KQL, log search alerts</td></tr>
+<tr><td>Examples</td><td>Percentage CPU of a VM, Http 5xx count of a web app</td><td>Every request with its URL, duration, user and operation ID</td></tr>
+<tr><td>Retention</td><td>Platform metrics are kept 93 days</td><td>Configured per workspace / table</td></tr>
+</table></div>`},
+    {h:"Two names for the same Application Insights data",
+     p:`Classic Application Insights resources were retired in February 2024; every resource is now <b>workspace-based</b>. Telemetry lands in workspace tables with <code>App*</code> names. The <b>Logs</b> blade of the Application Insights resource still accepts the original (classic) table and column names, which is what most docs and exam questions use. In the workspace itself you must use the new names.`,
+     after:`<div class="tablewrap"><table class="ref">
+<tr><th>Classic (App Insights Logs blade)</th><th>Workspace table</th><th>Column differences</th></tr>
+<tr><td><code>requests</code></td><td><code>AppRequests</code></td><td><code>timestamp</code> → <code>TimeGenerated</code>, <code>duration</code> → <code>DurationMs</code>, <code>name</code> → <code>Name</code>, <code>success</code> → <code>Success</code>, <code>resultCode</code> → <code>ResultCode</code></td></tr>
+<tr><td><code>dependencies</code></td><td><code>AppDependencies</code></td><td><code>type</code> → <code>DependencyType</code>, <code>target</code> → <code>Target</code></td></tr>
+<tr><td><code>exceptions</code></td><td><code>AppExceptions</code></td><td><code>type</code> → <code>ExceptionType</code>, <code>outerMessage</code> → <code>OuterMessage</code></td></tr>
+<tr><td><code>traces</code></td><td><code>AppTraces</code></td><td><code>message</code> → <code>Message</code>, <code>severityLevel</code> → <code>SeverityLevel</code></td></tr>
+<tr><td><code>pageViews</code> / <code>customEvents</code></td><td><code>AppPageViews</code> / <code>AppEvents</code></td><td><code>user_Id</code> → <code>UserId</code>, <code>session_Id</code> → <code>SessionId</code></td></tr>
+<tr><td colspan="3">All tables: <code>operation_Id</code> → <code>OperationId</code>, <code>operation_ParentId</code> → <code>ParentId</code>, <code>cloud_RoleName</code> → <code>AppRoleName</code>, <code>customDimensions</code> → <code>Properties</code>, <code>itemCount</code> → <code>ItemCount</code></td></tr>
+</table></div>`},
+    {h:"Infrastructure tables in Log Analytics", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Table</th><th>Filled by</th><th>Typical question</th></tr>
+<tr><td><code>Perf</code></td><td>Performance counters collected by the Azure Monitor agent (data collection rule)</td><td>CPU, memory, disk, network counters per computer</td></tr>
+<tr><td><code>InsightsMetrics</code></td><td>VM insights</td><td>Processor / memory / disk / network metrics shown in the VM insights charts</td></tr>
+<tr><td><code>Heartbeat</code></td><td>Every connected agent, once a minute</td><td>Which machines are still reporting? Agent version, OS type</td></tr>
+<tr><td><code>AzureActivity</code></td><td>The subscription activity log (via a diagnostic setting)</td><td>Who created, changed or deleted which resource, and when?</td></tr>
+<tr><td><code>ContainerLogV2</code>, <code>KubePodInventory</code></td><td>Container insights (AKS)</td><td>Container stdout/stderr, pod status and restarts</td></tr>
+</table></div>`}
+  ],
+  tip:`Fast numeric signal or alert on a threshold → <b>metrics</b>. Need to search, correlate or slice by any property → <b>logs + KQL</b>. If a query mixes <code>requests</code> with <code>TimeGenerated</code>, or <code>AppRequests</code> with <code>timestamp</code>, it's wrong.`,
+  exercises:[
+    {id:"mt1", type:"match", title:"Metric or log?",
+     q:`For each need, pick the data type you would use.`,
+     rows:[
+       ["Alert within about a minute when a VM's Percentage CPU stays above 90%", "Metrics"],
+       ["List every request that threw a <code>SqlException</code>, with its URL and user ID", "Logs"],
+       ["Chart Http 5xx for an App Service app on a dashboard, no code changes", "Metrics"],
+       ["Correlate one slow request with the database calls it made", "Logs"],
+       ["Find out who deleted a storage account last Tuesday", "Logs"]
+     ],
+     choices:["Metrics","Logs"],
+     hint:`Metrics are numbers over time; logs are records you can search and join.`,
+     why:`Threshold alerts and simple charts of platform values are what metrics are for: they're near real time and need no agent. Anything that needs individual records (a request's URL, a correlated dependency call, the caller of a delete in <code>AzureActivity</code>) is a log query.`},
+    {id:"mt2", type:"match", title:"Classic name → workspace table",
+     q:`Your team moved queries from the Application Insights Logs blade to the Log Analytics workspace. Match each classic table to its workspace table.`,
+     rows:[["<code>requests</code>","AppRequests"],["<code>dependencies</code>","AppDependencies"],["<code>exceptions</code>","AppExceptions"],["<code>traces</code>","AppTraces"],["<code>customEvents</code>","AppEvents"],["<code>pageViews</code>","AppPageViews"]],
+     choices:["AppRequests","AppDependencies","AppExceptions","AppTraces","AppEvents","AppPageViews"],
+     hint:`Mostly "App" + the singular/plural name with a capital letter. One is shortened.`,
+     why:`The workspace tables keep the concept but use PascalCase and an <code>App</code> prefix. The odd one out is <code>customEvents</code> → <code>AppEvents</code>.`},
+    {id:"mt3", type:"fill", title:"Column names in the workspace", mono:true,
+     q:`Rewrite the classic columns for <code>AppRequests</code>.`,
+     tpl:`timestamp          →  [[0]]
+duration           →  [[1]]
+operation_Id       →  [[2]]
+operation_ParentId →  [[3]]
+cloud_RoleName     →  [[4]]`,
+     blanks:[["TimeGenerated"],["DurationMs"],["OperationId"],["ParentId"],["AppRoleName"]],
+     hint:`Every workspace table uses the same time column. Duration states its unit. The role name moves to an App… column.`,
+     why:`<code>TimeGenerated</code> is the time column of every Log Analytics table. <code>DurationMs</code>, <code>OperationId</code>, <code>ParentId</code> and <code>AppRoleName</code> are the workspace equivalents of the classic columns.`},
+    {id:"mt4", type:"lines", title:"Mixed-up schema",
+     q:`This query runs in the <b>Log Analytics workspace</b>. Click the lines that will fail because they use classic names.`,
+     code:["AppRequests","| where TimeGenerated > ago(1h)","| where success == false","| summarize Failures = count() by Name, cloud_RoleName","| order by Failures desc"],
+     answer:[2,3],
+     hint:`Two columns are spelled the classic way.`,
+     why:`<code>AppRequests</code> has <code>Success</code> (KQL column names are case-sensitive) and <code>AppRoleName</code>, not <code>success</code> and <code>cloud_RoleName</code>. <code>TimeGenerated</code> and <code>Name</code> are already correct.`},
+    {id:"mt5", type:"mc", title:"Which table answers it?",
+     q:`An operator asks: "Which of our 40 VMs have stopped sending data to the workspace in the last 15 minutes?" Which table do you query?`,
+     options:["Heartbeat","Perf","AzureActivity","requests"], answer:0,
+     hint:`One table gets a row from each connected agent every minute.`,
+     why:`Every connected agent writes a <code>Heartbeat</code> record once a minute, so the latest <code>TimeGenerated</code> per <code>Computer</code> tells you who has gone quiet. <code>Perf</code> depends on which counters you collect, <code>AzureActivity</code> is control-plane operations, and <code>requests</code> is application telemetry.`}
+  ]
+},
+/* ================================================================ 2 */
+{
+  group:"Read the signals",
+  title:"Infrastructure indicators",
+  tag:"CPU · memory · disk · network · VMs, App Service, containers · metrics explorer",
+  intro:`Before you blame the code, check the platform. Four resources tell most of the story: <b>CPU</b>, <b>memory</b>, <b>disk</b> and <b>network</b>. Azure collects host-level metrics for VMs, App Service and AKS automatically; deeper in-guest counters need the <b>Azure Monitor agent</b> (VM insights or a data collection rule).`,
+  sections:[
+    {h:"What to look at, per resource", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Resource</th><th>Key metrics</th><th>Notes</th></tr>
+<tr><td><b>Virtual machine</b> (host metrics, no agent)</td><td>Percentage CPU · Available Memory Bytes · Disk Read/Write Bytes and Operations/Sec · OS/Data Disk IOPS Consumed Percentage · Network In Total / Network Out Total · CPU Credits Remaining (B-series)</td><td>Guest-only data such as <b>free space per logical disk</b>, per-process usage or page-file counters requires the Azure Monitor agent (<code>Perf</code> / <code>InsightsMetrics</code>).</td></tr>
+<tr><td><b>App Service plan</b></td><td>CPU Percentage · Memory Percentage · Disk Queue Length · Http Queue Length · Data In / Data Out</td><td>Plan metrics are shared by all apps on the plan; split by <b>Instance</b> to spot one bad worker.</td></tr>
+<tr><td><b>App Service app</b></td><td>Requests · Http 5xx / Http 4xx · Response Time · Memory working set · CPU Time · Health check status</td><td>App-level view of load and errors.</td></tr>
+<tr><td><b>AKS / containers</b> (Container insights)</td><td>Node CPU and memory vs allocatable · container <b>working set</b> memory · pod restarts and status · CPU throttling</td><td>A container over its <b>memory limit</b> is <b>OOMKilled</b> and restarted; one over its <b>CPU limit</b> is <b>throttled</b>, not killed.</td></tr>
+</table></div>`},
+    {h:"Reading the patterns", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Pattern</th><th>Likely meaning</th></tr>
+<tr><td>CPU high on every instance + Http Queue Length growing</td><td>Not enough compute: scale out (more instances) or up</td></tr>
+<tr><td>Memory climbs steadily for days and drops after each restart</td><td>Memory leak in the application</td></tr>
+<tr><td>Disk IOPS (or bandwidth) Consumed Percentage at 100% while CPU is low</td><td>Disk is throttled at its performance cap: faster disk tier / bigger disk, or a VM size with higher limits</td></tr>
+<tr><td>B-series VM: CPU Credits Remaining hits 0, then CPU is capped</td><td>Burstable VM out of credits: move to a non-burstable size</td></tr>
+<tr><td>One instance much hotter than the others</td><td>Uneven load (sticky sessions / ARR affinity) or a bad instance</td></tr>
+<tr><td>Network Out spikes with no matching request increase</td><td>Large responses, backups, or unexpected data transfer to investigate</td></tr>
+</table></div>`},
+    {h:"Metrics explorer in five moves", p:`<b>1 Scope</b> (one or more resources of the same type and region) → <b>2 Metric</b> (+ namespace) → <b>3 Aggregation</b>: <i>Avg</i>, <i>Min</i>, <i>Max</i>, <i>Sum</i>, <i>Count</i> → <b>4 Filter / Apply splitting</b> on a dimension (e.g. Instance, ResultCode) → <b>5 Share</b>: pin to a dashboard, add to a workbook, or create an alert rule from the chart. Averages over a large time grain hide spikes: use <b>Max</b> to see peaks, <b>Sum</b> for counts of events (requests, errors).`},
+    {h:"The same signal in KQL (Perf)", lang:"kql", code:`Perf
+| where TimeGenerated > ago(1h)
+| where ObjectName == "Processor" and CounterName == "% Processor Time" and InstanceName == "_Total"
+| summarize avg(CounterValue) by bin(TimeGenerated, 5m), Computer
+| render timechart`}
+  ],
+  tip:`Exam scenarios pair a symptom with a metric: "slow but CPU low" → look at <b>disk</b> (IOPS consumed, queue length) or a <b>dependency</b>. "Free disk space" or "memory used by a process" → needs the <b>Azure Monitor agent</b>. "See each instance separately" → <b>apply splitting</b> in metrics explorer.`,
+  exercises:[
+    {id:"in1", type:"match", title:"Symptom → diagnosis",
+     q:`Match each observation to the most likely explanation.`,
+     rows:[
+       ["App Service plan: CPU Percentage 95% on all instances, Http Queue Length rising", "Not enough compute: scale out the plan"],
+       ["Memory Percentage creeps up for three days, drops after every restart", "Memory leak in the application"],
+       ["VM: Data Disk IOPS Consumed Percentage pinned at 100%, CPU at 20%", "Disk throttled at its performance cap"],
+       ["B-series VM: CPU Credits Remaining reaches 0, CPU then flat at a low level", "Burstable VM ran out of CPU credits"],
+       ["AKS pod restarts repeatedly with reason OOMKilled", "Container exceeds its memory limit"]
+     ],
+     choices:["Not enough compute: scale out the plan","Memory leak in the application","Disk throttled at its performance cap","Burstable VM ran out of CPU credits","Container exceeds its memory limit"],
+     hint:`Look at which resource is saturated and whether it recovers on restart.`,
+     why:`Saturated CPU plus a growing HTTP queue means the instances can't keep up. A memory curve that resets on restart is the classic leak signature. A disk at 100% of its IOPS cap throttles I/O regardless of CPU. B-series VMs run at a baseline once credits are gone. OOMKilled means the container's working set exceeded its memory limit.`},
+    {id:"in2", type:"mc", title:"Which one needs an agent?",
+     q:`You want to chart these for a Windows VM. Which one is <b>not</b> available as a host (platform) metric and needs the Azure Monitor agent?`,
+     options:["Percentage CPU","Network In Total","Free space percentage of the D: logical disk","Disk Write Operations/Sec"], answer:2,
+     hint:`The host sees the virtual disk, not the file system inside the guest.`,
+     why:`The hypervisor can measure CPU, network and disk I/O from outside the VM, but it can't see the file system, so free space per logical disk comes from guest counters (<code>Perf</code> "LogicalDisk / % Free Space" or VM insights) collected by the Azure Monitor agent.`},
+    {id:"in3", type:"mc", title:"Choose the aggregation",
+     q:`Users complain about short freezes. On a 24-hour metrics explorer chart of a VM's Percentage CPU with the default aggregation, everything looks fine at around 40%. Which change most likely reveals the problem?`,
+     options:["Switch the aggregation to Max","Switch the aggregation to Count","Switch the aggregation to Sum","Change the chart type to an area chart"], answer:0,
+     hint:`Averaging many samples smooths away short peaks.`,
+     why:`Avg over a long time grain flattens brief spikes. <b>Max</b> shows the highest sample in each interval, so a 30-second spike to 100% becomes visible. Count counts samples and Sum of a percentage is meaningless.`},
+    {id:"in4", type:"mc", title:"One bad instance?",
+     q:`An App Service plan runs 4 instances. CPU Percentage averages 60%, but you suspect one instance is at 100%. What do you do in metrics explorer?`,
+     options:["Apply splitting on the Instance dimension","Add a filter Instance = all","Change the time range to the last 30 days","Create a second chart with Memory Percentage"], answer:0,
+     hint:`You want one line per value of a dimension.`,
+     why:`<b>Splitting</b> draws one series per dimension value, so each instance gets its own line. A filter narrows to selected values, and a longer time range or another metric doesn't separate the instances.`},
+    {id:"in5", type:"kql", title:"CPU per computer as a time chart",
+     q:`Write a query for the last <b>hour</b> that shows the average total CPU (<code>ObjectName</code> "Processor", <code>CounterName</code> "% Processor Time", <code>InstanceName</code> "_Total") per <code>Computer</code> in <b>5-minute</b> bins, rendered as a time chart.${sch("Perf", S_PERF)}`,
+     starter:`Perf
+`,
+     checks:[
+       {l:"Starts from the Perf table", t:q => q.table === "perf"},
+       {l:"Keeps only the last hour (TimeGenerated > ago(1h))", t:q => q.where(...TIME("TimeGenerated","1h"))},
+       {l:"Filters ObjectName, CounterName and InstanceName", t:q => q.where('ObjectName == "Processor"') && q.where('CounterName == "% Processor Time"') && q.where('InstanceName == "_Total"')},
+       {l:"summarize avg(CounterValue) by bin(TimeGenerated, 5m), Computer", t:q => q.sum([["avg(CounterValue)"]], [["bin(TimeGenerated, 5m)","floor(TimeGenerated, 5m)"], "Computer"])},
+       {l:"Renders a timechart after the summarize", t:q => q.render("timechart") && q.before("summarize","render")}
+     ],
+     cols:["Perf","TimeGenerated","ObjectName","CounterName","InstanceName","CounterValue","Computer"],
+     solution:`Perf
+| where TimeGenerated > ago(1h)
+| where ObjectName == "Processor" and CounterName == "% Processor Time" and InstanceName == "_Total"
+| summarize avg(CounterValue) by bin(TimeGenerated, 5m), Computer
+| render timechart`,
+     accept:[`Perf | WHERE TimeGenerated >= ago(60m) | where ObjectName=='Processor' | where CounterName == "% Processor Time" and InstanceName == "_Total" | summarize AvgCpu = avg(CounterValue) by Computer, bin(TimeGenerated, 300s) | render timechart`],
+     reject:[`Perf | where TimeGenerated > ago(1h) | where ObjectName == "Processor" and CounterName == "% Processor Time" and InstanceName == "_Total" | summarize avg(CounterValue) by Computer | render timechart`,
+             `Perf | where timegenerated > ago(1h) | where ObjectName == "Processor" and CounterName == "% Processor Time" and InstanceName == "_Total" | summarize avg(CounterValue) by bin(timegenerated, 5m), Computer | render timechart`],
+     hint:`Filter first (time, then counter), then <code>summarize avg(...) by bin(TimeGenerated, 5m), Computer</code>, then <code>render timechart</code>.`,
+     why:`Filtering before aggregating keeps the query cheap. <code>bin()</code> groups timestamps into 5-minute buckets and the extra <code>Computer</code> key gives one series per machine, which <code>render timechart</code> draws as separate lines.`},
+    {id:"in6", type:"kql", title:"Disks running out of space",
+     q:`Using the Windows counter <code>ObjectName</code> "LogicalDisk", <code>CounterName</code> "% Free Space", find every <code>Computer</code> and <code>InstanceName</code> (drive) whose <b>lowest</b> free-space value in the last <b>hour</b> was below <b>10</b>. Exclude the "_Total" instance.${sch("Perf", S_PERF)}`,
+     starter:`Perf
+`,
+     checks:[
+       {l:"Filters the last hour", t:q => q.where(...TIME("TimeGenerated","1h"))},
+       {l:"Filters the LogicalDisk / % Free Space counter", t:q => q.where('ObjectName == "LogicalDisk"') && q.where('CounterName == "% Free Space"')},
+       {l:"Excludes InstanceName \"_Total\"", t:q => q.where('InstanceName != "_Total"','InstanceName !~ "_Total"','not(InstanceName == "_Total")')},
+       {l:"summarize min(CounterValue) by Computer, InstanceName", t:q => q.sum([["min(CounterValue)"]], ["Computer","InstanceName"])},
+       {l:"Then keeps only values below 10 (where … < 10 after the summarize)", t:q => { const i = q.idx("summarize"); return i >= 0 && q.main.some((s, k) => k > i && s.op === "where" && s.preds.some(p => /^[\w]+<10$/.test(p))); }}
+     ],
+     cols:["Perf","TimeGenerated","ObjectName","CounterName","InstanceName","CounterValue","Computer"],
+     solution:`Perf
+| where TimeGenerated > ago(1h)
+| where ObjectName == "LogicalDisk" and CounterName == "% Free Space"
+| where InstanceName != "_Total"
+| summarize MinFreePct = min(CounterValue) by Computer, InstanceName
+| where MinFreePct < 10`,
+     accept:[`Perf | where TimeGenerated > ago(1h) and ObjectName == "LogicalDisk" and CounterName == "% Free Space" and InstanceName != "_Total" | summarize min(CounterValue) by InstanceName, Computer | where min_CounterValue < 10 | order by min_CounterValue asc`],
+     reject:[`Perf | where TimeGenerated > ago(1h) | where ObjectName == "LogicalDisk" and CounterName == "% Free Space" | where CounterValue < 10 | summarize min(CounterValue) by Computer, InstanceName`],
+     hint:`Aggregate first, then filter on the aggregated column: the default name of <code>min(CounterValue)</code> is <code>min_CounterValue</code>, or give it your own alias.`,
+     why:`A <code>where</code> after <code>summarize</code> filters on the aggregate (like SQL's HAVING). Excluding <code>_Total</code> avoids the averaged pseudo-instance hiding a single full drive. This is guest data, so it only exists when the Azure Monitor agent collects the LogicalDisk counters.`}
+  ]
+},
+/* ================================================================ 3 */
+{
+  group:"Read the signals",
+  title:"Application performance",
+  tag:"Performance & Failures views · Application Map · Live Metrics · smart detection",
+  intro:`Application Insights turns request, dependency and exception telemetry into ready-made investigation views. Know <b>which view answers which question</b>: that's what the exam tests.`,
+  sections:[
+    {h:"The views", after:`<div class="tablewrap"><table class="ref">
+<tr><th>View</th><th>Answers</th></tr>
+<tr><td><b>Application Map</b></td><td>Which components (one node per <b>cloud role name</b>) call which dependencies, with call counts, average duration and failure rate on each node and arrow. Find the component that drags everything down.</td></tr>
+<tr><td><b>Performance</b></td><td>Operations ranked by duration and count, with a <b>duration distribution</b>. Drill into slow <b>samples</b>, see their dependencies, and open Profiler traces if Profiler is enabled.</td></tr>
+<tr><td><b>Failures</b></td><td>Failed operations, failing <b>dependencies</b> and <b>exceptions</b>, top response codes and exception types. Drill into a sample.</td></tr>
+<tr><td><b>Transaction search</b></td><td>Find individual telemetry items by type, time, property or text.</td></tr>
+<tr><td><b>End-to-end transaction details</b></td><td>One operation across all components as a timeline (Gantt) with related traces and exceptions (next module).</td></tr>
+<tr><td><b>Live Metrics</b></td><td>A real-time stream (about 1 second latency) of request rate, failures, dependency calls, CPU/memory and sample failures. Nothing is stored: ideal for watching a deployment as it happens.</td></tr>
+<tr><td><b>Smart detection</b></td><td>Machine-learning based warnings without manual thresholds: <b>Failure Anomalies</b> (unusual rise in failed request rate) and <b>performance anomalies</b> such as degraded server response time or dependency duration. A Failure Anomalies alert rule is created automatically with a new Application Insights resource.</td></tr>
+</table></div>`},
+    {h:"Averages lie, percentiles don't", p:`An average of 300 ms can hide 5% of users waiting 8 seconds. The Performance view's duration distribution and percentiles (P50, P95, P99) show the tail. In KQL that's <code>percentiles(duration, 50, 95, 99)</code>.`},
+    {h:"Sampling", p:`With (adaptive) sampling enabled, only a share of telemetry is kept, and each retained item carries <code>itemCount</code>, the number of original items it represents. The portal views compensate automatically; in your own KQL use <code>sum(itemCount)</code> rather than <code>count()</code> for accurate totals.`}
+  ],
+  tip:`Keywords: "<b>which component / dependency</b> is the bottleneck" → Application Map. "<b>real time</b> during a release" → Live Metrics. "<b>slowest operations</b>" → Performance. "<b>top exceptions / response codes</b>" → Failures. "<b>notify automatically</b> about unusual failure rates without setting thresholds" → smart detection (Failure Anomalies).`,
+  exercises:[
+    {id:"ap1", type:"match", title:"Pick the view",
+     q:`Which Application Insights feature fits each need?`,
+     rows:[
+       ["Watch request rate and failures second by second while a deployment rolls out", "Live Metrics"],
+       ["See which downstream component makes the whole app slow, at a glance", "Application Map"],
+       ["Rank operations by duration and drill into the slowest samples", "Performance"],
+       ["Find the top exception types and response codes behind failed requests", "Failures"],
+       ["Be warned about an unusual rise in failed requests without setting a threshold", "Smart detection"],
+       ["Find the single request a customer reported, by a custom property", "Transaction search"]
+     ],
+     choices:["Live Metrics","Application Map","Performance","Failures","Smart detection","Transaction search"],
+     hint:`Real time, topology, latency, errors, automatic anomaly detection, item lookup.`,
+     why:`Each view is built for one investigation step: Live Metrics for now, Application Map for topology, Performance for latency, Failures for errors, smart detection for automatic anomaly warnings, and Transaction search for finding specific items.`},
+    {id:"ap2", type:"mc", title:"Two services, one node",
+     q:`Your web front end and your orders API both send telemetry to the same Application Insights resource, but Application Map shows them as a <b>single node</b>. What's the most likely fix?`,
+     options:[
+       "Give each service its own cloud role name (with OpenTelemetry: the service.name resource attribute)",
+       "Create a separate Log Analytics workspace for each service",
+       "Enable Live Metrics on both services",
+       "Increase the sampling percentage"],
+     answer:0,
+     hint:`What does Application Map use to decide which node a telemetry item belongs to?`,
+     why:`Application Map groups telemetry by <b>cloud role name</b>. If both apps report the same (or default) role name they collapse into one node. With the Azure Monitor OpenTelemetry Distro the role name comes from the <code>service.name</code> (and <code>service.namespace</code>) resource attributes.`},
+    {id:"ap3", type:"multi", title:"Live Metrics facts",
+     q:`Which statements about Live Metrics are true? <i>Select all that apply.</i>`,
+     options:[
+       "It shows data with roughly one second of latency",
+       "The streamed data is not stored; close the view and it's gone",
+       "You can filter the stream and see sample failed requests and exceptions",
+       "It replaces alert rules, because someone is always watching",
+       "It lets you query the last 90 days of requests"],
+     answer:[0,1,2],
+     hint:`Live = now, not history.`,
+     why:`Live Metrics is a real-time stream for watching a release or incident as it happens, with custom filters and sample failures. It isn't persisted, so it's no substitute for stored telemetry (Logs) or for alerts.`},
+    {id:"ap4", type:"mc", title:"Fine on average, slow for some",
+     q:`In the Performance view, <code>GET /cart</code> has an average duration of 280 ms, yet support gets complaints that the cart "sometimes takes ages". What's the best next step?`,
+     options:[
+       "Look at the duration distribution / 95th and 99th percentiles and drill into the slow samples",
+       "Ignore it: an average of 280 ms is within target",
+       "Restart the web app and check the average again",
+       "Switch on Live Metrics and wait for the next complaint"],
+     answer:0,
+     hint:`The average hides the tail.`,
+     why:`A small fraction of very slow requests barely moves the average. The distribution and high percentiles show the tail, and drilling into the slow samples opens their end-to-end details, where you can see which dependency or step took the time.`},
+    {id:"ap5", type:"order", title:"Investigate a spike in failures",
+     q:`A Failure Anomalies alert fires for your web app. Put a sensible investigation in order.`,
+     items:[
+       "Open the Failures view for the alert's time window",
+       "Select the failing operation and look at its top response codes and exception types",
+       "Drill into a sample failed request",
+       "Read the end-to-end transaction details to see which dependency failed",
+       "Query the logs with KQL to measure how many users and operations were affected"],
+     hint:`Overview → narrow → one example → root cause → impact.`,
+     why:`Start broad in Failures, narrow to the operation and its dominant exception or code, inspect one sample's end-to-end transaction for the root cause, then quantify impact with a KQL query.`},
+    {id:"ap6", type:"mc", title:"Count with sampling",
+     q:`Adaptive sampling is enabled. A dashboard query uses <code>requests | summarize count() by bin(timestamp, 1h)</code> and shows far fewer requests than the load balancer. How do you fix the query?`,
+     options:["Use summarize sum(itemCount) instead of count()","Use summarize dcount(id)","Add | take 100000","Switch to the AppRequests table, which isn't sampled"],
+     answer:0,
+     hint:`Each retained item knows how many original items it stands for.`,
+     why:`Every sampled-in item carries <code>itemCount</code> (e.g. 5 if 1 in 5 was kept). <code>sum(itemCount)</code> estimates the real total. The workspace table holds the same sampled data, and <code>take</code> or <code>dcount</code> don't undo sampling.`}
+  ]
+},
+/* ================================================================ 4 */
+{
+  group:"Read the signals",
+  title:"Usage analysis",
+  tag:"users · sessions · events · funnels · cohorts · retention · user flows",
+  intro:`Usage analytics answers product questions: who uses the app, what they do and whether they come back. It relies on <b>client-side telemetry</b>: the Application Insights JavaScript SDK (page views, user and session IDs) plus <b>custom events</b> you track for important actions.`,
+  sections:[
+    {h:"The usage tools", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Tool</th><th>Answers</th></tr>
+<tr><td><b>Users / Sessions / Events</b></td><td>How many users, sessions or events over time, split by properties such as country, browser or a custom dimension.</td></tr>
+<tr><td><b>Funnels</b></td><td>Of the users who did step 1, how many did step 2, 3… (conversion and drop-off in a sequence such as cart → checkout → pay).</td></tr>
+<tr><td><b>User Flows</b></td><td>The paths users take to and from a page or event, and where they leave the site.</td></tr>
+<tr><td><b>Retention</b></td><td>How many users come back after their first visit, over the following days or weeks.</td></tr>
+<tr><td><b>Cohorts</b></td><td>A saved set of users, sessions, events or operations with something in common, reused as a filter in the other tools.</td></tr>
+</table></div>`},
+    {h:"Usage in KQL", lang:"kql", code:`// daily active users over the last 30 days
+pageViews
+| where timestamp > ago(30d)
+| summarize Users = dcount(user_Id) by bin(timestamp, 1d)
+| render timechart`},
+    {h:"Identifying users", p:`The JavaScript SDK sets an anonymous user ID in a cookie (<code>user_Id</code>) and a session ID (<code>session_Id</code>). If you call <code>setAuthenticatedUserContext</code>, the signed-in ID is sent too (<code>user_AuthenticatedId</code>), so usage can be counted per real account across devices.`}
+  ],
+  tip:`"How many complete the sequence / where do they drop out" → <b>Funnels</b>. "Do they come back" → <b>Retention</b>. "What do they do next / where do they leave" → <b>User Flows</b>. "Reuse a group of users" → <b>Cohorts</b>. Empty usage reports usually mean the <b>browser SDK</b> isn't installed.`,
+  exercises:[
+    {id:"us1", type:"match", title:"Which usage tool?",
+     q:`Match each product question to the tool that answers it.`,
+     rows:[
+       ["What percentage of users who add to cart go on to complete payment?", "Funnels"],
+       ["Of users who first visited in week 1, how many returned in weeks 2–4?", "Retention"],
+       ["After the pricing page, where do users go next, and where do they leave?", "User Flows"],
+       ["Define 'users who used the export feature' once and filter other reports by it", "Cohorts"],
+       ["How many distinct users per day, split by country?", "Users"]
+     ],
+     choices:["Funnels","Retention","User Flows","Cohorts","Users"],
+     hint:`Sequence, return visits, paths, reusable group, plain counts.`,
+     why:`Funnels measure conversion through ordered steps, Retention measures return visits, User Flows show navigation paths, Cohorts save a group for reuse, and Users counts distinct users with splitting.`},
+    {id:"us2", type:"mc", title:"No usage data",
+     q:`A team added the Application Insights server-side SDK to their ASP.NET Core app. Requests and dependencies appear, but the Users, Sessions and Funnels tools are empty. What's missing?`,
+     options:[
+       "The Application Insights JavaScript SDK in the web pages (and custom events for key actions)",
+       "A Log Analytics workspace",
+       "Enabling Live Metrics",
+       "A Failure Anomalies alert rule"],
+     answer:0,
+     hint:`Users and sessions are a browser concept.`,
+     why:`Page views, anonymous user IDs and session IDs come from the browser. Without the JavaScript SDK (or custom events with user context) the usage tools have nothing to work with.`},
+    {id:"us3", type:"kql", title:"Daily active users",
+     q:`Count the <b>distinct users</b> (<code>user_Id</code>) per <b>day</b> for the last <b>7 days</b> from page views and render a time chart.${sch("pageViews", ["timestamp:datetime","name:string","url:string","user_Id:string","session_Id:string","client_CountryOrRegion:string"])}`,
+     starter:`pageViews
+`,
+     checks:[
+       {l:"Uses the pageViews table", t:q => q.table === "pageviews"},
+       {l:"Last 7 days", t:q => q.where(...TIME("timestamp","7d"))},
+       {l:"summarize dcount(user_Id) by bin(timestamp, 1d)", t:q => q.sum([["dcount(user_Id)"]], [["bin(timestamp, 1d)","floor(timestamp, 1d)","startofday(timestamp)"]])},
+       {l:"render timechart", t:q => q.render("timechart")}
+     ],
+     cols:["pageViews","timestamp","user_Id"],
+     solution:`pageViews
+| where timestamp > ago(7d)
+| summarize Users = dcount(user_Id) by bin(timestamp, 1d)
+| render timechart`,
+     accept:[`pageViews | where timestamp >= ago(168h) | summarize dcount(user_Id) by bin(timestamp, 24h) | render timechart with (title="DAU")`],
+     reject:[`pageViews | where timestamp > ago(7d) | summarize count() by bin(timestamp, 1d) | render timechart`],
+     hint:`<code>dcount()</code> counts distinct values; <code>count()</code> would count page views.`,
+     why:`<code>dcount(user_Id)</code> gives distinct users per bucket (an estimate, accurate enough for usage reporting), and binning by one day turns it into daily active users.`},
+    {id:"us4", type:"kql", title:"Most used features",
+     q:`Each feature use is tracked as a custom event. Show the <b>5</b> event <code>name</code>s with the most occurrences in the last <b>30 days</b>, highest first.${sch("customEvents", ["timestamp:datetime","name:string","user_Id:string","session_Id:string","customDimensions:dynamic"])}`,
+     starter:`customEvents
+`,
+     checks:[
+       {l:"Last 30 days", t:q => q.where(...TIME("timestamp","30d"))},
+       {l:"summarize count() by name", t:q => q.sum([["count()"]], ["name"])},
+       {l:"Keeps the top 5 by that count, highest first", t:q => { const s = q.sumStage(); if (!s) return false; const names = s.aliases.length ? s.aliases : ["count_"]; return q.limited(5) && names.some(n => q.sortedDesc(n)); }}
+     ],
+     cols:["customEvents","timestamp","name"],
+     solution:`customEvents
+| where timestamp > ago(30d)
+| summarize Uses = count() by name
+| top 5 by Uses desc`,
+     accept:[`customEvents | where timestamp > ago(30d) | summarize count() by name | order by count_ desc | take 5`,
+             `customEvents | where timestamp > ago(30d) | summarize Uses=count() by name | sort by Uses | limit 5`],
+     reject:[`customEvents | where timestamp > ago(30d) | summarize count() by name | take 5`,
+             `customEvents | where timestamp > ago(30d) | summarize Uses = count() by name | top 5 by Uses asc`],
+     hint:`<code>top 5 by X</code> sorts descending by default. Without an alias the count column is called <code>count_</code>.`,
+     why:`<code>take</code> alone returns arbitrary rows; you must sort first (<code>order by … desc | take 5</code>) or use <code>top 5 by …</code>, which sorts and limits in one step.`}
+  ]
+},
+/* ================================================================ 5 */
+{
+  group:"Read the signals",
+  title:"Distributed tracing",
+  tag:"operation ID · parent ID · W3C Trace Context · end-to-end transactions · OpenTelemetry",
+  intro:`One click in the browser can touch a front end, two APIs, a queue and a database. <b>Distributed tracing</b> stitches all that telemetry into one <b>operation</b> so you can follow it end to end, even across Application Insights resources.`,
+  sections:[
+    {h:"How the pieces are linked", lang:"text", code:`traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
+              │  │                                │                └ trace-flags (01 = sampled)
+              │  │                                └ parent-id: span ID of the caller (16 hex)
+              │  └ trace-id: shared by the whole operation (32 hex)
+              └ version`,
+     p:`Services propagate the <b>W3C Trace Context</b> <code>traceparent</code> HTTP header. Application Insights maps it to its data model:`,
+     after:`<div class="tablewrap"><table class="ref">
+<tr><th>Concept</th><th>Classic column</th><th>Workspace column</th></tr>
+<tr><td>Trace ID: same for every item in the operation</td><td><code>operation_Id</code></td><td><code>OperationId</code></td></tr>
+<tr><td>This item's own span ID</td><td><code>id</code></td><td><code>Id</code></td></tr>
+<tr><td>The span that caused this item</td><td><code>operation_ParentId</code></td><td><code>ParentId</code></td></tr>
+</table></div>
+<p>So when the front end calls the orders API, the front end records a <b>dependency</b> with <code>id = X</code>, and the orders API records a <b>request</b> whose <code>operation_ParentId = X</code>. Both share the same <code>operation_Id</code>.</p>`},
+    {h:"OpenTelemetry", p:`Microsoft's recommended instrumentation is the <b>Azure Monitor OpenTelemetry Distro</b> (or the Azure Monitor exporter), configured with a <b>connection string</b> (instrumentation-key-only ingestion is no longer supported). OpenTelemetry spans map to Application Insights tables by span kind:`,
+     after:`<div class="tablewrap"><table class="ref">
+<tr><th>OpenTelemetry signal</th><th>Application Insights table</th></tr>
+<tr><td>Span kind <b>Server</b> or <b>Consumer</b></td><td><code>requests</code></td></tr>
+<tr><td>Span kind <b>Client</b>, <b>Producer</b> or <b>Internal</b></td><td><code>dependencies</code></td></tr>
+<tr><td>Recorded exceptions</td><td><code>exceptions</code></td></tr>
+<tr><td>Log records</td><td><code>traces</code></td></tr>
+<tr><td>Resource attribute <code>service.name</code></td><td>cloud role name (the node in Application Map)</td></tr>
+</table></div>`},
+    {h:"Seeing it", p:`<b>End-to-end transaction details</b> (open any sample from Performance, Failures or Transaction search) shows all requests and dependencies of one operation as a timeline across components, with the traces and exceptions that belong to it. Application Map is the aggregated view of the same correlation data. In KQL, filter every table on the same <code>operation_Id</code>.`}
+  ],
+  tip:`"Correlate telemetry across microservices" → shared <b>operation ID</b> via W3C <b>traceparent</b> propagation. "Two calls show up as separate transactions" → the context isn't being <b>propagated</b> (custom HTTP client, message queue without propagation, or an uninstrumented hop).`,
+  exercises:[
+    {id:"dt1", type:"fill", title:"Read a traceparent header", mono:true,
+     q:`The orders API receives this header: <code>traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01</code>. Fill in the classic column names.`,
+     tpl:`4bf92f3577b34da6a3ce929d0e0e4736  →  stored in [[0]] on every item of the operation
+00f067aa0ba902b7                  →  stored in [[1]] of the orders API's request`,
+     blanks:[["operation_Id","OperationId"],["operation_ParentId","ParentId"]],
+     hint:`The 32-hex value is the trace ID, the 16-hex value is the caller's span ID.`,
+     why:`The trace-id becomes <code>operation_Id</code> for everything in the operation, and the parent-id (the caller's span, i.e. its dependency <code>id</code>) becomes the new request's <code>operation_ParentId</code>.`},
+    {id:"dt2", type:"match", title:"Span kind → table",
+     q:`Your service is instrumented with the Azure Monitor OpenTelemetry Distro. Where does each signal land?`,
+     rows:[["A <b>Server</b> span for an incoming HTTP call","requests"],["A <b>Client</b> span for an outgoing SQL call","dependencies"],["A <b>Consumer</b> span processing a Service Bus message","requests"],["A <b>Producer</b> span sending a message","dependencies"],["A log record written with ILogger / logging API","traces"],["An exception recorded on a span","exceptions"]],
+     choices:["requests","dependencies","traces","exceptions"],
+     hint:`Incoming work = request. Outgoing call = dependency.`,
+     why:`Server and Consumer spans represent work the service receives (requests); Client, Producer and Internal spans represent work it initiates (dependencies). Log records become traces, and recorded exceptions become exceptions.`},
+    {id:"dt3", type:"kql", title:"Everything in one operation",
+     q:`A customer sends you operation ID <code>0af7651916cd43dd8448eb211c80319c</code>. Return all <b>requests, dependencies and exceptions</b> of that operation in <b>chronological order</b> (oldest first). Show at least <code>timestamp</code>, <code>itemType</code>, <code>name</code> and <code>cloud_RoleName</code>.${sch("requests / dependencies / exceptions (common columns)", ["timestamp:datetime","itemType:string","name:string","operation_Id:string","operation_ParentId:string","id:string","cloud_RoleName:string","duration:real"])}`,
+     starter:``,
+     checks:[
+       {l:"Combines requests, dependencies and exceptions with union", t:q => q.table.startsWith("union") && ["requests","dependencies","exceptions"].every(t => new RegExp(`\\b${t}\\b`).test(q.table))},
+       {l:'Filters operation_Id == "0af7651916cd43dd8448eb211c80319c"', t:q => q.where('operation_Id == "0af7651916cd43dd8448eb211c80319c"','operation_Id =~ "0af7651916cd43dd8448eb211c80319c"')},
+       {l:"Sorted by timestamp ascending", t:q => q.sortedAsc("timestamp")},
+       {l:"Projects timestamp, itemType, name, cloud_RoleName", t:q => q.st("project").some(s => ["timestamp","itemtype","name","cloud_rolename"].every(c => s.items.some(i => i.e === c || i.alias === c)))}
+     ],
+     cols:["timestamp","itemType","operation_Id","cloud_RoleName"],
+     solution:`union requests, dependencies, exceptions
+| where operation_Id == "0af7651916cd43dd8448eb211c80319c"
+| project timestamp, itemType, name, cloud_RoleName, id, operation_ParentId, duration
+| order by timestamp asc`,
+     accept:[`union exceptions, requests, dependencies | where operation_Id == '0af7651916cd43dd8448eb211c80319c' | sort by timestamp asc | project timestamp, itemType, name, cloud_RoleName`],
+     reject:[`union requests, dependencies, exceptions | where operation_Id == "0af7651916cd43dd8448eb211c80319c" | project timestamp, itemType, name, cloud_RoleName | order by timestamp`,
+             `requests | where operation_Id == "0af7651916cd43dd8448eb211c80319c" | project timestamp, itemType, name, cloud_RoleName | order by timestamp asc`],
+     hint:`<code>union</code> several tables, filter on the shared ID, and remember that <code>order by</code> is <b>descending</b> unless you say <code>asc</code>.`,
+     why:`Every item in a distributed operation shares <code>operation_Id</code>, so one filter over a <code>union</code> rebuilds the whole transaction, which is the query behind the end-to-end transaction view. <code>order by</code> defaults to <code>desc</code>, so chronological order needs <code>asc</code>.`},
+    {id:"dt4", type:"mc", title:"Broken chain",
+     q:`The web front end calls the payments API through a custom TCP client. In Application Insights, each call shows up as <b>two separate transactions</b>, one per service, and Application Map has no arrow between them. What's the cause?`,
+     options:[
+       "Trace context (traceparent) isn't propagated over that call, so the payments API starts a new operation",
+       "The payments API has sampling enabled",
+       "The two services use different Log Analytics workspaces",
+       "Live Metrics is disabled on the front end"],
+     answer:0,
+     hint:`What carries the operation ID from one process to the next?`,
+     why:`Correlation only works if the caller sends the trace context and the callee reads it. Automatic instrumentation does that for supported HTTP clients and messaging libraries; a custom protocol needs manual propagation. Different resources or workspaces still correlate as long as the context flows.`},
+    {id:"dt5", type:"mc", title:"Who is the parent?",
+     q:`Front end <b>web</b> calls <b>orders-api</b> over HTTP. Which statement about the request recorded by <b>orders-api</b> is correct?`,
+     options:[
+       "Its operation_ParentId equals the id of the dependency recorded by web for that call",
+       "Its operation_ParentId equals its own id",
+       "Its operation_Id is newly generated by orders-api",
+       "Its operation_ParentId is empty, because only the first request has a parent"],
+     answer:0,
+     hint:`The caller's outgoing span is the parent of the callee's incoming span.`,
+     why:`<b>web</b> records the outgoing call as a dependency with its own <code>id</code>, sends that as the parent-id in <code>traceparent</code>, and <b>orders-api</b> stores it as <code>operation_ParentId</code> on its request. The <code>operation_Id</code> is inherited, not regenerated.`}
+  ]
+},
+/* ================================================================ 6 */
+{
+  group:"Query with KQL",
+  title:"KQL basics",
+  tag:"where · project · extend · take · order by · top · ago()",
+  intro:`A KQL query starts with a <b>table</b> and pipes rows through <b>operators</b> with <code>|</code>. Each operator gets the previous result. Filter early, shape late.`,
+  sections:[
+    {h:"The operators you need first", lang:"kql", code:`requests                                  // table
+| where timestamp > ago(1h)               // filter rows; ago() = now minus a timespan
+| where success == false and resultCode == "500"
+| extend durationSec = duration / 1000.0  // add a calculated column
+| project timestamp, name, durationSec, operation_Id   // keep / rename columns
+| order by durationSec desc               // sort (default is desc!), synonym: sort by
+| take 20                                 // any 20 rows, synonym: limit`,
+     after:`<div class="tablewrap"><table class="ref">
+<tr><th>You want</th><th>Write</th></tr>
+<tr><td>N rows sorted by a column</td><td><code>top 10 by duration</code> (descending by default), same as <code>order by duration desc | take 10</code></td></tr>
+<tr><td>Any N rows to look at the data</td><td><code>take 10</code>: no ordering guarantee</td></tr>
+<tr><td>Drop or rename columns</td><td><code>project-away customDimensions</code>, <code>project-rename Op = name</code></td></tr>
+<tr><td>Time windows</td><td><code>ago(15m)</code>, <code>ago(1d)</code>, <code>between (ago(2d) .. ago(1d))</code>, <code>startofday(now())</code></td></tr>
+</table></div>`},
+    {h:"Comparing strings", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Operator</th><th>Meaning</th><th>Case</th></tr>
+<tr><td><code>==</code> / <code>!=</code></td><td>Equals / not equals</td><td>Sensitive</td></tr>
+<tr><td><code>=~</code> / <code>!~</code></td><td>Equals / not equals</td><td>Insensitive</td></tr>
+<tr><td><code>has</code></td><td>Contains a whole <b>term</b> (words split on non-alphanumeric characters); fast, uses the index</td><td>Insensitive</td></tr>
+<tr><td><code>contains</code></td><td>Contains the substring anywhere; slower</td><td>Insensitive</td></tr>
+<tr><td><code>startswith</code> / <code>endswith</code></td><td>Prefix / suffix</td><td>Insensitive</td></tr>
+<tr><td><code>in</code> / <code>in~</code></td><td>Equals one of a list</td><td>Sensitive / insensitive</td></tr>
+</table></div>
+<p>Table names, column names, operators and function names are case-sensitive in KQL: <code>Where</code> or <code>Timestamp</code> fail. Severity levels in <code>traces</code>/<code>exceptions</code>: 0 Verbose, 1 Information, 2 Warning, 3 Error, 4 Critical.</p>`}
+  ],
+  tip:`Recognise <code>where</code> = filter rows, <code>project</code> = choose columns, <code>extend</code> = add a column, <code>summarize</code> = aggregate. A query that uses <code>take</code> to get "the latest" or "the slowest" rows is wrong: it needs <code>top</code> or <code>order by</code>.`,
+  exercises:[
+    {id:"kb1", type:"fill", title:"Complete the query", mono:true,
+     q:`Fill in the operators so the query returns <i>any</i> 10 requests from the last hour, keeping four columns.`,
+     tpl:`requests
+| [[0]] timestamp > [[1]](1h)
+| [[2]] timestamp, name, duration, resultCode
+| [[3]] 10`,
+     blanks:[["where","filter"],["ago"],["project"],["take","limit"]],
+     hint:`Filter rows, relative time, choose columns, return a few rows.`,
+     why:`<code>where</code> filters, <code>ago(1h)</code> is one hour before now, <code>project</code> keeps the listed columns, and <code>take</code> (or <code>limit</code>) returns that many rows in no particular order.`},
+    {id:"kb2", type:"kql", title:"Recent failed requests",
+     q:`List the <b>failed</b> requests of the last <b>24 hours</b> with only <code>timestamp</code>, <code>name</code>, <code>resultCode</code> and <code>duration</code>, <b>newest first</b>.${sch("requests", S_REQUESTS)}`,
+     starter:`requests
+`,
+     checks:[
+       {l:"Uses the requests table", t:q => q.table === "requests"},
+       {l:"Last 24 hours", t:q => q.where(...TIME("timestamp","24h"))},
+       {l:"Only failed requests (success == false)", t:q => q.where(...FAILED("success"))},
+       {l:"Projects timestamp, name, resultCode, duration", t:q => q.st("project").some(s => s.items.length === 4 && ["timestamp","name","resultcode","duration"].every(c => s.items.some(i => i.e === c)))},
+       {l:"Newest first (order by timestamp desc)", t:q => q.sortedDesc("timestamp")}
+     ],
+     cols:["requests","timestamp","success","name","resultCode","duration"],
+     solution:`requests
+| where timestamp > ago(24h)
+| where success == false
+| project timestamp, name, resultCode, duration
+| order by timestamp desc`,
+     accept:[`requests | where timestamp > ago(1d) and success == "False" | project timestamp, name, resultCode, duration | sort by timestamp desc`,
+             `requests | where timestamp >= ago(24h) | where not(success) | order by timestamp | project name, timestamp, duration, resultCode`],
+     reject:[`requests | where timestamp > ago(24h) | where success == false | project timestamp, name, resultCode, duration | order by timestamp asc`,
+             `requests | where timestamp > ago(24h) | project timestamp, name, resultCode, duration | order by timestamp desc`],
+     hint:`<code>success</code> is a bool. <code>order by</code> is descending by default, but writing <code>desc</code> makes it obvious.`,
+     why:`Two filters (time and failure), a <code>project</code> to keep four columns, and a descending sort on <code>timestamp</code> give the newest failures first.`},
+    {id:"kb3", type:"kql", title:"The ten slowest requests",
+     q:`Return the <b>10 slowest</b> requests of the last <b>hour</b>, showing <code>name</code>, <code>duration</code> and <code>operation_Id</code> (so you can open their transactions).${sch("requests", S_REQUESTS)}`,
+     starter:`requests
+`,
+     checks:[
+       {l:"Last hour", t:q => q.where(...TIME("timestamp","1h"))},
+       {l:"Sorted by duration descending and limited to 10 (top 10 by duration, or order by + take)", t:q => q.sortedDesc("duration") && q.limited(10)},
+       {l:"Projects name, duration, operation_Id", t:q => q.st("project").some(s => ["name","duration","operation_id"].every(c => s.items.some(i => i.e === c)))}
+     ],
+     cols:["requests","timestamp","name","duration","operation_Id"],
+     solution:`requests
+| where timestamp > ago(1h)
+| top 10 by duration desc
+| project name, duration, operation_Id`,
+     accept:[`requests | where timestamp > ago(60m) | project name, duration, operation_Id | order by duration desc | take 10`,
+             `requests | where timestamp > ago(1h) | top 10 by duration | project name, duration, operation_Id`],
+     reject:[`requests | where timestamp > ago(1h) | take 10 | project name, duration, operation_Id`,
+             `requests | where timestamp > ago(1h) | top 10 by duration asc | project name, duration, operation_Id`],
+     hint:`<code>top N by col</code> sorts and limits in one step.`,
+     why:`<code>top 10 by duration</code> (desc is the default) is the idiomatic answer; <code>order by duration desc | take 10</code> is equivalent. <code>take 10</code> alone returns arbitrary rows.`},
+    {id:"kb4", type:"lines", title:"Spot the syntax errors",
+     q:`Click the lines that make this query fail.`,
+     code:["requests","| where timestamp > ago(1d)",`| where name = "GET /api/orders"`,"| extend durationSec = duration / 1000.0","| order durationSec desc","| take 20"],
+     answer:[2,4],
+     hint:`One comparison and one sort are written incorrectly.`,
+     why:`Equality in KQL is <code>==</code> (or <code>=~</code>); a single <code>=</code> is only for assignment in <code>extend</code>/<code>project</code>/<code>summarize</code>. And sorting needs <code>order by</code> (or <code>sort by</code>).`},
+    {id:"kb5", type:"multi", title:"What does has match?",
+     q:`Which <code>message</code> values does <code>traces | where message has "timeout"</code> return? <i>Select all that apply.</i>`,
+     options:[`"Connection timeout after 30s"`,`"TIMEOUT waiting for lock"`,`"Request-timeout: retrying"`,`"Timeouts exceeded on queue"`,`"readtimeout occurred"`],
+     answer:[0,1,2],
+     hint:`<code>has</code> looks for whole terms; terms are split on non-alphanumeric characters, and the match ignores case.`,
+     why:`"timeout", "TIMEOUT" and "Request-timeout" all contain the term <i>timeout</i> (the hyphen splits terms). "Timeouts" and "readtimeout" only contain it as a <i>substring</i>, which <code>contains</code> would match but <code>has</code> doesn't.`},
+    {id:"kb6", type:"kql", title:"Errors in the logs",
+     q:`Show traces of severity <b>Error or Critical</b> from the last <b>6 hours</b>, with <code>timestamp</code>, <code>cloud_RoleName</code>, <code>severityLevel</code> and <code>message</code>.${sch("traces", S_TRACES)}<p>Severity levels: 0 Verbose, 1 Information, 2 Warning, 3 Error, 4 Critical.</p>`,
+     starter:`traces
+`,
+     checks:[
+       {l:"Uses the traces table", t:q => q.table === "traces"},
+       {l:"Last 6 hours", t:q => q.where(...TIME("timestamp","6h"))},
+       {l:"severityLevel 3 or higher", t:q => q.where("severityLevel >= 3","severityLevel > 2","severityLevel in (3, 4)","severityLevel in (4, 3)")},
+       {l:"Projects timestamp, cloud_RoleName, severityLevel, message", t:q => q.st("project").some(s => ["timestamp","cloud_rolename","severitylevel","message"].every(c => s.items.some(i => i.e === c)))}
+     ],
+     cols:["traces","timestamp","severityLevel","cloud_RoleName","message"],
+     solution:`traces
+| where timestamp > ago(6h)
+| where severityLevel >= 3
+| project timestamp, cloud_RoleName, severityLevel, message`,
+     accept:[`traces | where timestamp > ago(360m) and severityLevel in (3, 4) | project timestamp, cloud_RoleName, severityLevel, message | order by timestamp desc`],
+     reject:[`traces | where timestamp > ago(6h) | where severityLevel == 3 | project timestamp, cloud_RoleName, severityLevel, message`],
+     hint:`A numeric comparison covers both levels.`,
+     why:`<code>severityLevel >= 3</code> keeps Error (3) and Critical (4). Filtering on <code>== 3</code> would silently drop Critical entries.`},
+    {id:"kb7", type:"kql", fix:true, title:"Fix the query: column used before it exists",
+     q:`This query should list last-hour requests that took <b>more than 2 seconds</b>, but it fails with "Failed to resolve column durationSec". Fix it.${sch("requests", S_REQUESTS)}`,
+     starter:`requests
+| where timestamp > ago(1h)
+| where durationSec > 2
+| extend durationSec = duration / 1000.0
+| project timestamp, name, durationSec`,
+     checks:[
+       {l:"Still filters the last hour", t:q => q.where(...TIME("timestamp","1h"))},
+       {l:"Calculates durationSec = duration / 1000 with extend", t:q => q.st("extend").some(s => s.items.some(i => i.alias === "durationsec" && [K("duration / 1000.0"), K("duration / 1000"), K("todouble(duration) / 1000")].includes(i.e)))},
+       {l:"Filters durationSec > 2 after the extend", t:q => { const i = q.idx("extend"); return i >= 0 && q.main.some((s, k) => k > i && s.op === "where" && s.preds.some(p => p === "durationsec>2" || p === "durationsec>2.0")); }},
+       {l:"Projects timestamp, name, durationSec", t:q => q.st("project").some(s => ["timestamp","name","durationsec"].every(c => s.items.some(i => i.e === c)))}
+     ],
+     cols:["requests","timestamp","duration","name"],
+     solution:`requests
+| where timestamp > ago(1h)
+| extend durationSec = duration / 1000.0
+| where durationSec > 2
+| project timestamp, name, durationSec`,
+     accept:[`requests | where timestamp > ago(1h) | extend durationSec = duration / 1000 | where durationSec > 2 | project timestamp, name, durationSec`],
+     reject:[`requests
+| where timestamp > ago(1h)
+| where durationSec > 2
+| extend durationSec = duration / 1000.0
+| project timestamp, name, durationSec`],
+     hint:`Each operator only sees the columns produced by the operators before it.`,
+     why:`The pipeline runs top to bottom, so a column created by <code>extend</code> exists only for later operators. Move the <code>extend</code> above the <code>where</code>. (Filtering <code>duration > 2000</code> before the extend would work too and is slightly cheaper.)`},
+    {id:"kb8", type:"mc", title:"Why no rows?",
+     q:`<code>requests | where name == "get /api/orders"</code> returns nothing, although the Performance view lists <code>GET /api/orders</code> with thousands of calls. Which fix is correct?`,
+     options:[`Use name =~ "get /api/orders"`,`Use name = "get /api/orders"`,`Use name has_cs "get /api/orders"`,`Add | take 1000`],
+     answer:0,
+     hint:`Compare the casing of the literal and the real value.`,
+     why:`<code>==</code> is case-sensitive, so "get" doesn't equal "GET". <code>=~</code> is the case-insensitive equality operator (or simply match the exact casing). <code>has_cs</code> is explicitly case-sensitive, and <code>=</code> isn't a comparison.`}
+  ]
+},
+/* ================================================================ 7 */
+{
+  group:"Query with KQL",
+  title:"Aggregate & chart",
+  tag:"summarize · count · countif · dcount · avg · percentiles · bin · render",
+  intro:`<code>summarize</code> collapses rows into groups: <i>aggregations</i> before <code>by</code>, <i>group keys</i> after it. Group by <code>bin(timestamp, …)</code> and you have a time series to <code>render</code>.`,
+  sections:[
+    {h:"summarize patterns", lang:"kql", code:`requests
+| where timestamp > ago(1d)
+| summarize Requests = count(),
+            Failed   = countif(success == false),
+            Users    = dcount(user_Id),
+            AvgMs    = avg(duration),
+            P95Ms    = percentile(duration, 95)
+    by bin(timestamp, 1h), name
+// percentiles(duration, 50, 95, 99) returns three columns at once:
+//   percentile_duration_50, percentile_duration_95, percentile_duration_99`,
+     after:`<p>Without an alias the result column gets a generated name: <code>count_</code>, <code>avg_duration</code>, <code>countif_</code>… Integer division truncates: <code>failed / total</code> of two longs is 0 when failed &lt; total. Multiply by <code>100.0</code> or use <code>todouble()</code> first.</p>`},
+    {h:"render", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Chart</th><th>Use for</th></tr>
+<tr><td><code>render timechart</code></td><td>Values over time (x axis must be a datetime, e.g. a <code>bin(timestamp, …)</code> column)</td></tr>
+<tr><td><code>render barchart</code> / <code>columnchart</code></td><td>Comparing categories (horizontal bars / vertical columns)</td></tr>
+<tr><td><code>render piechart</code></td><td>Share of a whole</td></tr>
+<tr><td><code>render areachart</code> / <code>scatterchart</code></td><td>Stacked volume over time / correlation between two numeric columns</td></tr>
+</table></div>`}
+  ],
+  tip:`The exam's favourite: "chart X over time" → <code>summarize … by bin(timestamp, interval) | render timechart</code>. A <code>summarize</code> without <code>bin()</code> can't produce a meaningful time chart.`,
+  exercises:[
+    {id:"ag1", type:"kql", title:"Requests per 5 minutes",
+     q:`Chart the number of requests per <b>5 minutes</b> over the last <b>hour</b> as a time chart. (Assume no sampling.)${sch("requests", S_REQUESTS)}`,
+     starter:`requests
+`,
+     checks:[
+       {l:"Last hour", t:q => q.where(...TIME("timestamp","1h"))},
+       {l:"summarize count() by bin(timestamp, 5m)", t:q => q.sum([["count()","sum(itemCount)"]], [["bin(timestamp, 5m)","floor(timestamp, 5m)"]])},
+       {l:"render timechart (after summarize)", t:q => q.render("timechart") && q.before("summarize","render")}
+     ],
+     cols:["requests","timestamp","itemCount"],
+     solution:`requests
+| where timestamp > ago(1h)
+| summarize Requests = count() by bin(timestamp, 5m)
+| render timechart`,
+     accept:[`requests|where timestamp>ago(1h)|summarize count() by bin(timestamp,5min)|render timechart`],
+     reject:[`requests | where timestamp > ago(1h) | summarize count() | render timechart`,`requests | where timestamp > ago(1h) | summarize count() by bin(timestamp, 5m)`],
+     hint:`Aggregate by a binned timestamp, then render.`,
+     why:`<code>bin(timestamp, 5m)</code> rounds each timestamp down to its 5-minute bucket, so <code>count()</code> is per bucket. <code>render timechart</code> plots the datetime column on the x axis.`},
+    {id:"ag2", type:"kql", title:"Latency percentiles per operation",
+     q:`For the last <b>24 hours</b>, show the <b>50th, 95th and 99th percentile</b> of <code>duration</code> for each operation <code>name</code>.${sch("requests", S_REQUESTS)}`,
+     starter:`requests
+`,
+     checks:[
+       {l:"Last 24 hours", t:q => q.where(...TIME("timestamp","24h"))},
+       {l:"P50, P95 and P99 of duration (percentiles() or three percentile() calls)", t:q => q.st("summarize").some(s =>
+          s.aggs.includes(K("percentiles(duration, 50, 95, 99)")) || [50,95,99].every(p => s.aggs.includes(K(`percentile(duration, ${p})`))))},
+       {l:"Grouped by name only", t:q => q.st("summarize").some(s => s.by.length === 1 && s.by[0] === "name")}
+     ],
+     cols:["requests","timestamp","duration","name"],
+     solution:`requests
+| where timestamp > ago(24h)
+| summarize percentiles(duration, 50, 95, 99) by name`,
+     accept:[`requests | where timestamp > ago(1d) | summarize P50 = percentile(duration, 50), P95 = percentile(duration, 95), P99 = percentile(duration, 99) by name | order by P95 desc`],
+     reject:[`requests | where timestamp > ago(24h) | summarize avg(duration), max(duration) by name`,`requests | where timestamp > ago(24h) | summarize percentiles(duration, 50, 95, 99)`],
+     hint:`<code>percentiles(column, p1, p2, …)</code> returns several percentiles in one call.`,
+     why:`Percentiles show what the slowest users experience: P95 is the duration that 95% of requests beat. <code>percentiles()</code> returns one column per value (<code>percentile_duration_95</code>…), equivalent to separate <code>percentile()</code> calls.`},
+    {id:"ag3", type:"kql", title:"Failure rate per operation",
+     q:`For the last <b>day</b>, calculate per operation <code>name</code>: the total number of requests, the number of failed requests, and the <b>failure percentage</b> (0–100, with decimals). Sort by the failure percentage, highest first.${sch("requests", S_REQUESTS)}`,
+     starter:`requests
+`,
+     checks:[
+       {l:"Last day", t:q => q.where(...TIME("timestamp","1d"))},
+       {l:"summarize count() and countif(success == false) by name", t:q => q.sum([["count()"], FAILED("success").map(p => `countif(${p})`)], ["name"])},
+       {l:"extend a percentage with floating-point maths (100.0 * … / … or todouble())", t:q => { const i = q.idx("summarize"); return q.main.some((s, k) => k > i && s.op === "extend" && s.items.some(it => it.alias && /\//.test(it.e) && /100\.0|todouble|toreal|1\.0\*/.test(it.e))); }},
+       {l:"Sorted by that percentage, highest first", t:q => q.st("extend").some(s => s.items.some(it => it.alias && q.sortedDesc(it.alias)))}
+     ],
+     cols:["requests","timestamp","success","name"],
+     solution:`requests
+| where timestamp > ago(1d)
+| summarize Total = count(), Failed = countif(success == false) by name
+| extend FailurePct = round(100.0 * Failed / Total, 2)
+| order by FailurePct desc`,
+     accept:[`requests | where timestamp > ago(24h) | summarize total=count(), failed=countif(not(success)) by name | extend pct = todouble(failed) / total * 100 | sort by pct desc`],
+     reject:[`requests | where timestamp > ago(1d) | summarize Total = count(), Failed = countif(success == false) by name | extend FailurePct = Failed / Total * 100 | order by FailurePct desc`],
+     hint:`<code>countif(predicate)</code> counts matching rows. Watch out for integer division: <code>Failed / Total</code> of two longs is 0.`,
+     why:`<code>count()</code> and <code>countif()</code> return longs, so <code>Failed / Total</code> truncates to 0. Multiplying by <code>100.0</code> first (or <code>todouble()</code>) forces real arithmetic.`},
+    {id:"ag4", type:"lines", title:"Why is the chart flat at zero?",
+     q:`This query should chart the hourly failure percentage, but it errors or shows only zeros. Click the faulty lines.`,
+     code:["requests","| where timestamp > ago(1d)","| summarize total = count(), failed = countif(success == false) by bin(timestamp)","| extend failurePct = failed / total * 100","| render timechart"],
+     answer:[2,3],
+     hint:`One function is missing an argument; one calculation uses integer arithmetic.`,
+     why:`<code>bin()</code> needs a bin size: <code>bin(timestamp, 1h)</code>. And <code>failed / total</code> divides two longs, giving 0 before the <code>* 100</code>: write <code>100.0 * failed / total</code>.`},
+    {id:"ag5", type:"match", title:"Pick the chart",
+     q:`Which <code>render</code> visualisation fits each request?`,
+     rows:[["Request count per 5 minutes over the last day","timechart"],["Share of exceptions per exception type","piechart"],["Average duration per operation, as horizontal bars","barchart"],["Failed requests per result code, as vertical columns","columnchart"],["Response size vs. duration for each request, to see if they correlate","scatterchart"]],
+     choices:["timechart","piechart","barchart","columnchart","scatterchart"],
+     hint:`Time on the x axis, parts of a whole, categories, correlation.`,
+     why:`Time series → <code>timechart</code>; parts of a whole → <code>piechart</code>; categories → <code>barchart</code> (horizontal) or <code>columnchart</code> (vertical); two numeric variables → <code>scatterchart</code>.`},
+    {id:"ag6", type:"kql", title:"Failures in the workspace schema",
+     q:`This time you're in the <b>Log Analytics workspace</b>. Count failed requests of the last <b>24 hours</b> per <code>Name</code> and <code>ResultCode</code>, most failures first.${sch("AppRequests", ["TimeGenerated:datetime","Name:string","Url:string","DurationMs:real","ResultCode:string","Success:bool","OperationId:string","AppRoleName:string","ItemCount:int"])}`,
+     starter:`AppRequests
+`,
+     checks:[
+       {l:"Uses AppRequests", t:q => q.table === "apprequests"},
+       {l:"Last 24 hours on TimeGenerated", t:q => q.where(...TIME("TimeGenerated","24h"))},
+       {l:"Only failed requests (Success == false)", t:q => q.where(...FAILED("Success"))},
+       {l:"summarize count() by Name, ResultCode", t:q => q.sum([["count()","sum(ItemCount)"]], ["Name","ResultCode"])},
+       {l:"Most failures first", t:q => { const s = q.sumStage(); return !!s && (s.aliases.length ? s.aliases : ["count_","sum_itemcount"]).some(a => q.sortedDesc(a)); }}
+     ],
+     cols:["AppRequests","TimeGenerated","Success","Name","ResultCode","ItemCount"],
+     solution:`AppRequests
+| where TimeGenerated > ago(24h)
+| where Success == false
+| summarize Failures = count() by Name, ResultCode
+| order by Failures desc`,
+     accept:[`AppRequests | where TimeGenerated > ago(1d) and Success == false | summarize count() by ResultCode, Name | top 50 by count_`],
+     reject:[`AppRequests | where timestamp > ago(24h) | where Success == false | summarize Failures = count() by Name, ResultCode | order by Failures desc`,
+             `AppRequests | where TimeGenerated > ago(24h) | where success == false | summarize Failures = count() by name, resultCode | order by Failures desc`],
+     hint:`Same logic as the classic query, but <code>TimeGenerated</code>, <code>Success</code>, <code>Name</code>, <code>ResultCode</code>, with exact casing.`,
+     why:`Workspace tables use <code>TimeGenerated</code> and PascalCase columns. Because KQL is case-sensitive about column names, <code>success</code> or <code>name</code> would fail against <code>AppRequests</code>.`}
+  ]
+},
+/* ================================================================ 8 */
+{
+  group:"Query with KQL",
+  title:"Join, let, series & infra tables",
+  tag:"join · let · make-series · Perf · Heartbeat · AzureActivity · cross-resource",
+  intro:`Real investigations combine tables: failed requests with their failing dependencies, machines with their last heartbeat, deletes with their caller. This module adds <code>let</code>, <code>join</code>, <code>make-series</code> and the Log Analytics infrastructure tables.`,
+  sections:[
+    {h:"let and join", lang:"kql", code:`let window = 1h;                              // a scalar
+let failedDeps = dependencies                  // a tabular expression
+    | where timestamp > ago(window) and success == false
+    | project operation_Id, target, depResult = resultCode;
+requests
+| where timestamp > ago(window) and success == false
+| join kind=inner (failedDeps) on operation_Id
+| summarize count() by name, target
+// different key names on each side:
+//   | join kind=inner (dependencies) on $left.id == $right.operation_ParentId`,
+     after:`<div class="tablewrap"><table class="ref">
+<tr><th>join kind</th><th>Returns</th></tr>
+<tr><td><code>innerunique</code> (the default!)</td><td>Matches, but duplicate keys on the <b>left</b> side are removed first</td></tr>
+<tr><td><code>inner</code></td><td>Every matching left/right pair</td></tr>
+<tr><td><code>leftouter</code></td><td>All left rows, with right columns where there's a match (empty otherwise)</td></tr>
+<tr><td><code>leftanti</code></td><td>Left rows that have <b>no</b> match on the right</td></tr>
+<tr><td><code>leftsemi</code></td><td>Left rows that <b>do</b> have a match (left columns only)</td></tr>
+</table></div>
+<p>Columns that exist on both sides get a suffix on the right side: <code>name1</code>, <code>timestamp1</code>…</p>`},
+    {h:"make-series", lang:"kql", code:`requests
+| make-series Requests = count() default=0 on timestamp from ago(7d) to now() step 1h
+| render timechart`,
+     p:`Unlike <code>summarize … by bin()</code>, <code>make-series</code> creates a value for <b>every</b> step, filling empty buckets with the <code>default</code>. That's what you need for gap-free charts and for the series functions used in anomaly detection (<code>series_decompose_anomalies()</code>).`},
+    {h:"Infrastructure queries", lang:"kql", code:`// machines that stopped reporting
+Heartbeat
+| summarize LastSeen = max(TimeGenerated) by Computer
+| where LastSeen < ago(15m)
+
+// available memory per computer (Windows counter)
+Perf
+| where ObjectName == "Memory" and CounterName == "Available MBytes"
+| summarize avg(CounterValue) by bin(TimeGenerated, 15m), Computer
+
+// who deleted what, from the activity log
+AzureActivity
+| where OperationNameValue endswith "/delete"
+| project TimeGenerated, Caller, OperationNameValue, ResourceGroup, _ResourceId
+
+// several Application Insights resources at once
+union app("web-prod").requests, app("api-prod").requests
+| summarize count() by cloud_RoleName`}
+  ],
+  tip:`"Rows in A with no match in B" → <code>leftanti</code>. "Reuse a value or subquery" → <code>let</code>. "Machines not reporting" → <code>Heartbeat</code> + <code>max(TimeGenerated)</code>. "Who changed / deleted a resource" → <code>AzureActivity</code> (<code>Caller</code>). "Query across Application Insights resources" → <code>app()</code> (or <code>workspace()</code>).`,
+  exercises:[
+    {id:"jn1", type:"kql", title:"Failed requests + failed dependencies",
+     q:`For the last <b>hour</b>, join failed requests to the failed dependency calls of the <b>same operation</b> using <code>join kind=inner</code>, then count the matches per request <code>name</code> and dependency <code>target</code>.${sch("requests", S_REQUESTS)}${sch("dependencies", S_DEPS)}`,
+     starter:`requests
+`,
+     checks:[
+       {l:"requests filtered to the last hour and failed", t:q => q.table === "requests" && q.where(...TIME("timestamp","1h")) && q.where(...FAILED("success"))},
+       {l:"join kind=inner on operation_Id", t:q => q.st("join").some(s => /^join kind=inner\(/.test(s.s) && (s.s.endsWith("on operation_id") || s.s.endsWith("on $left.operation_id==$right.operation_id")))},
+       {l:"Right side: dependencies, last hour, failed", t:q => { const r = q.sub("join"); const ok = r.table === "dependencies" && r.where(...TIME("timestamp","1h")) && r.where(...FAILED("success")); if (ok) return true;
+          // or a let-defined subquery
+          const name = (q.st("join")[0] || {s:""}).s.match(/^join kind=inner\((\w+)\)/); if (!name || !q.lets[name[1]]) return false;
+          const l = kqlApi(q.lets[name[1]]); return l.table === "dependencies" && l.where(...TIME("timestamp","1h")) && l.where(...FAILED("success")); }},
+       {l:"summarize count() by name, target (after the join)", t:q => q.before("join","summarize") && q.sum([["count()"]], ["name","target"])}
+     ],
+     cols:["requests","dependencies","timestamp","success","operation_Id","name","target"],
+     solution:`requests
+| where timestamp > ago(1h) and success == false
+| join kind=inner (
+    dependencies
+    | where timestamp > ago(1h) and success == false
+  ) on operation_Id
+| summarize count() by name, target`,
+     accept:[`let deps = dependencies | where timestamp > ago(1h) | where success == false;
+requests | where timestamp > ago(1h) | where success == false | join kind=inner (deps) on operation_Id | summarize Failures = count() by target, name`,
+             `requests | where timestamp > ago(1h) and not(success) | join kind=inner (dependencies | where timestamp > ago(1h) and success == false) on $left.operation_Id == $right.operation_Id | summarize count() by name, target`],
+     reject:[`requests | where timestamp > ago(1h) and success == false | join (dependencies | where timestamp > ago(1h) and success == false) on operation_Id | summarize count() by name, target`,
+             `requests | where timestamp > ago(1h) and success == false | join kind=inner (dependencies | where timestamp > ago(1h)) on operation_Id | summarize count() by name, target`],
+     hint:`<code>| join kind=inner ( dependencies | where … ) on operation_Id</code>. The dependency's <code>name</code> becomes <code>name1</code>, so <code>name</code> still means the request.`,
+     why:`Both tables share <code>operation_Id</code>, so the join pairs each failed request with the failed calls made during it. <code>kind=inner</code> keeps every pair; the default <code>innerunique</code> would de-duplicate the left side first. Filtering both sides before the join keeps it small and fast.`},
+    {id:"jn2", type:"kql", title:"A threshold with let",
+     q:`Define a <code>let</code> variable holding the threshold <b>2000</b> (ms), then count requests from the last <b>hour</b> that are slower than it, per <code>name</code>.${sch("requests", S_REQUESTS)}`,
+     starter:`let `,
+     checks:[
+       {l:"let <name> = 2000;", t:q => Object.values(q.lets).some(v => v === "2000")},
+       {l:"Last hour", t:q => q.where(...TIME("timestamp","1h"))},
+       {l:"where duration > <your variable>", t:q => Object.keys(q.lets).some(n => q.lets[n] === "2000" && q.where(`duration > ${n}`))},
+       {l:"summarize count() by name", t:q => q.sum([["count()"]], ["name"])}
+     ],
+     cols:["requests","timestamp","duration","name"],
+     solution:`let thresholdMs = 2000;
+requests
+| where timestamp > ago(1h)
+| where duration > thresholdMs
+| summarize SlowRequests = count() by name`,
+     accept:[`let slow=2000; requests | where timestamp > ago(1h) and duration > slow | summarize count() by name`],
+     reject:[`requests | where timestamp > ago(1h) | where duration > 2000 | summarize count() by name`,`let slow = 2000 requests | where duration > slow | summarize count() by name`],
+     hint:`<code>let name = value;</code> ends with a semicolon, then the query follows.`,
+     why:`<code>let</code> binds a name to a scalar or a tabular expression for the rest of the query. The semicolon separates statements; without it the query doesn't parse.`},
+    {id:"jn3", type:"kql", title:"Who stopped sending heartbeats?",
+     q:`List each <code>Computer</code> whose <b>latest</b> heartbeat is older than <b>15 minutes</b>.${sch("Heartbeat", ["TimeGenerated:datetime","Computer:string","OSType:string","Category:string","Version:string","ResourceGroup:string","_ResourceId:string"])}`,
+     starter:`Heartbeat
+`,
+     checks:[
+       {l:"Uses the Heartbeat table", t:q => q.table === "heartbeat"},
+       {l:"summarize max(TimeGenerated) (or arg_max) by Computer", t:q => q.sum([["max(TimeGenerated)","arg_max(TimeGenerated, *)"]], ["Computer"])},
+       {l:"Then keeps only machines whose last heartbeat < ago(15m)", t:q => { const s = q.sumStage(); if (!s) return false; const cols = s.aliases.length ? s.aliases : ["max_timegenerated","timegenerated"];
+          const i = q.idx("summarize"); return q.main.some((st, k) => k > i && st.op === "where" && st.preds.some(p => cols.some(c => p === `${c}<ago(ts:900)` || p === `${c}<=ago(ts:900)`))); }}
+     ],
+     cols:["Heartbeat","TimeGenerated","Computer"],
+     solution:`Heartbeat
+| summarize LastHeartbeat = max(TimeGenerated) by Computer
+| where LastHeartbeat < ago(15m)`,
+     accept:[`Heartbeat | summarize arg_max(TimeGenerated, *) by Computer | where TimeGenerated < ago(15m) | project Computer, TimeGenerated, OSType`,
+             `Heartbeat | where TimeGenerated > ago(1d) | summarize max(TimeGenerated) by Computer | where max_TimeGenerated < ago(900s)`],
+     reject:[`Heartbeat | where TimeGenerated < ago(15m) | summarize by Computer`],
+     hint:`First find each machine's latest heartbeat, then filter on that. Filtering raw rows first would match every machine (they all have old heartbeats).`,
+     why:`Every healthy machine has thousands of old heartbeats, so <code>where TimeGenerated &lt; ago(15m)</code> on raw rows returns everyone. Aggregating to the latest timestamp per computer first and filtering afterwards finds the ones that have gone quiet.`},
+    {id:"jn4", type:"kql", title:"A gap-free hourly series",
+     q:`Use <code>make-series</code> to build the hourly request count for the last <b>7 days</b> up to now, with <b>0</b> for hours without requests, and render it as a time chart.${sch("requests", S_REQUESTS)}`,
+     starter:`requests
+`,
+     checks:[
+       {l:"make-series … count() default=0 on timestamp", t:q => q.st("make-series").some(s => s.s.includes(K("count() default=0 on timestamp")))},
+       {l:"from ago(7d) to now() step 1h", t:q => q.st("make-series").some(s => s.s.includes(K("from ago(7d) to now() step 1h")))},
+       {l:"render timechart", t:q => q.render("timechart")}
+     ],
+     cols:["requests","timestamp"],
+     solution:`requests
+| make-series Requests = count() default=0 on timestamp from ago(7d) to now() step 1h
+| render timechart`,
+     accept:[`requests | make-series count() default = 0 on timestamp from ago(168h) to now() step 60m | render timechart`,
+             `requests | where timestamp > ago(7d) | make-series Requests=count() default=0 on timestamp from ago(7d) to now() step 1h by cloud_RoleName | render timechart`],
+     reject:[`requests | summarize count() by bin(timestamp, 1h) | render timechart`,`requests | make-series count() on timestamp from ago(7d) to now() step 1h | render timechart`],
+     hint:`<code>make-series [Col =] Aggregation [default = value] on TimeColumn from start to end step interval</code>`,
+     why:`<code>make-series</code> emits one array element per step between <code>from</code> and <code>to</code>, using <code>default</code> where no rows exist, so quiet hours show as 0 instead of disappearing from the chart.`},
+    {id:"jn5", type:"kql", title:"Who deleted resources?",
+     q:`From the activity log, list delete operations in the last <b>7 days</b> with at least <code>TimeGenerated</code>, <code>Caller</code>, <code>OperationNameValue</code> and <code>ResourceGroup</code>. Operation names look like <code>MICROSOFT.COMPUTE/VIRTUALMACHINES/DELETE</code>.${sch("AzureActivity", ["TimeGenerated:datetime","OperationNameValue:string","ActivityStatusValue:string","Caller:string","ResourceGroup:string","_ResourceId:string","CategoryValue:string","Level:string"])}`,
+     starter:`AzureActivity
+`,
+     checks:[
+       {l:"Uses AzureActivity", t:q => q.table === "azureactivity"},
+       {l:"Last 7 days", t:q => q.where(...TIME("TimeGenerated","7d"))},
+       {l:"Only delete operations on OperationNameValue (endswith / has / contains \"delete\")", t:q => q.whereRe(/^operationnamevalue (endswith|has|contains)"\/?delete"$/)},
+       {l:"Projects TimeGenerated, Caller, OperationNameValue, ResourceGroup", t:q => q.st("project").some(s => ["timegenerated","caller","operationnamevalue","resourcegroup"].every(c => s.items.some(i => i.e === c)))}
+     ],
+     cols:["AzureActivity","TimeGenerated","OperationNameValue","Caller","ResourceGroup","_ResourceId"],
+     solution:`AzureActivity
+| where TimeGenerated > ago(7d)
+| where OperationNameValue endswith "/delete"
+| project TimeGenerated, Caller, OperationNameValue, ResourceGroup, _ResourceId
+| order by TimeGenerated desc`,
+     accept:[`AzureActivity | where TimeGenerated > ago(7d) and OperationNameValue has "delete" | project TimeGenerated, Caller, OperationNameValue, ResourceGroup`],
+     reject:[`AzureActivity | where TimeGenerated > ago(7d) | where OperationNameValue == "delete" | project TimeGenerated, Caller, OperationNameValue, ResourceGroup`],
+     hint:`<code>endswith</code>, <code>has</code> and <code>contains</code> ignore case; <code>==</code> would need the full name.`,
+     why:`The activity log records control-plane operations with the identity in <code>Caller</code>. <code>endswith "/delete"</code> (case-insensitive) catches every resource type's delete operation.`},
+    {id:"jn6", type:"mc", title:"Which join kind?",
+     q:`You want the computers that appear in <code>Heartbeat</code> during the last hour but have <b>no</b> rows in <code>Perf</code> in that hour (the counter collection is broken). Which query shape is right?`,
+     options:[
+       "Heartbeat | where … | distinct Computer | join kind=leftanti (Perf | where … | distinct Computer) on Computer",
+       "Heartbeat | where … | distinct Computer | join kind=inner (Perf | where … | distinct Computer) on Computer",
+       "Heartbeat | where … | distinct Computer | join kind=leftsemi (Perf | where … | distinct Computer) on Computer",
+       "Heartbeat | where … | join (Perf) on Computer | where isempty(Computer)"],
+     answer:0,
+     hint:`"In A but not in B".`,
+     why:`<code>leftanti</code> returns left rows with no match on the right. <code>inner</code> and <code>leftsemi</code> return the ones that do match, which is the opposite.`},
+    {id:"jn7", type:"fill", title:"Join on differently named keys", mono:true,
+     q:`Join each request to the dependencies it called <b>directly</b>: the dependency's <code>operation_ParentId</code> is the request's <code>id</code>.`,
+     tpl:`requests
+| where timestamp > ago(1h)
+| join kind=inner (dependencies | where timestamp > ago(1h))
+    on [[0]].id == [[1]].operation_ParentId`,
+     blanks:[["$left"],["$right"]],
+     hint:`Two special prefixes name the two sides of the join.`,
+     why:`<code>$left</code> refers to the table before <code>join</code>, <code>$right</code> to the one inside it. A direct child dependency's <code>operation_ParentId</code> is the <code>id</code> of the request that made the call.`},
+    {id:"jn8", type:"mc", title:"Across two Application Insights resources",
+     q:`Your front end and API send telemetry to two Application Insights resources, <i>web-prod</i> and <i>api-prod</i>. How do you count requests from both in one query?`,
+     options:[
+       `union app("web-prod").requests, app("api-prod").requests | summarize count() by cloud_RoleName`,
+       `requests | join app("api-prod") on operation_Id`,
+       `requests | where appName in ("web-prod", "api-prod"), run in either resource`,
+       "That's not possible; export both to Excel and combine them"],
+     answer:0,
+     hint:`There's a function that points to another Application Insights resource.`,
+     why:`<code>app("name")</code> (and <code>workspace("name")</code> for workspaces) lets one query read tables from other resources you have access to, and <code>union</code> combines them. If both resources send to the same workspace you can also query <code>AppRequests</code> there directly.`}
+  ]
+},
+/* ================================================================ 9 */
+{
+  group:"Share the insight",
+  title:"Workbooks & dashboards",
+  tag:"Azure Workbooks · Azure dashboards · Managed Grafana · Power BI",
+  intro:`A good query helps you; a good <b>report</b> helps the team. Azure Monitor gives you several ways to present metrics and logs, and the exam asks which one fits a requirement.`,
+  sections:[
+    {h:"Choosing the presentation tool", after:`<div class="tablewrap"><table class="ref">
+<tr><th>Tool</th><th>Strengths</th><th>Typical use</th></tr>
+<tr><td><b>Azure Workbooks</b></td><td>Interactive reports in the portal: text, <b>parameters</b> (time range, subscription, resource, dropdowns from a query), log and metric queries, Azure Resource Graph, charts, grids, tiles, tabs, conditional visibility. Many templates ship with Application Insights, VM insights and Container insights.</td><td>Troubleshooting guides, runbook-style investigations, team reports that need drill-down</td></tr>
+<tr><td><b>Azure dashboards</b></td><td>Pin tiles from metrics explorer, Log Analytics results, Application Insights and other blades onto one canvas; share as a resource with RBAC.</td><td>At-a-glance "single pane of glass", a wall screen for the ops team</td></tr>
+<tr><td><b>Azure Managed Grafana</b></td><td>Grafana dashboards with the Azure Monitor data source plus other sources (Prometheus, etc.).</td><td>Teams already standardised on Grafana, multi-cloud</td></tr>
+<tr><td><b>Power BI</b></td><td>Business reporting, combining monitoring data (exported KQL query) with other business data.</td><td>Management / business stakeholders</td></tr>
+</table></div>`},
+    {h:"Sharing and permissions", p:`A workbook is saved as an Azure resource (<code>microsoft.insights/workbooks</code>) in a resource group, so access is controlled with Azure RBAC (<i>Workbook Contributor</i> to save shared workbooks; readers need read access to the workbook). The queries run with the <b>viewer's</b> permissions: a viewer without access to the underlying workspace or resources sees no data. Workbooks and dashboards can also be deployed as ARM/Bicep templates, so they can live in source control and ship through a pipeline.`}
+  ],
+  tip:`"Interactive", "parameters", "drill-down", "combine text, metrics and logs" → <b>workbook</b>. "Single pane / at a glance / pin" → <b>dashboard</b>. "Already using Grafana" → <b>Managed Grafana</b>. "Business users, combine with business data" → <b>Power BI</b>.`,
+  exercises:[
+    {id:"wb1", type:"match", title:"Pick the presentation tool",
+     q:`Match each requirement to the best tool.`,
+     rows:[
+       ["An interactive report with time-range and environment parameters, explanatory text and drill-down from summary to details", "Azure Workbooks"],
+       ["A wall screen in the ops room showing pinned tiles from five resources at a glance", "Azure dashboard"],
+       ["The SRE team uses Grafana everywhere and wants Azure Monitor data next to Prometheus metrics", "Azure Managed Grafana"],
+       ["Monthly management report combining app usage with sales figures from the data warehouse", "Power BI"]
+     ],
+     choices:["Azure Workbooks","Azure dashboard","Azure Managed Grafana","Power BI"],
+     hint:`Interactive report, at-a-glance tiles, Grafana, business data.`,
+     why:`Workbooks are the interactive, parameterised reporting tool; dashboards are the at-a-glance canvas of pinned tiles; Managed Grafana fits Grafana-first teams; Power BI fits business reporting that mixes in non-monitoring data.`},
+    {id:"wb2", type:"multi", title:"Workbook capabilities",
+     q:`Which statements about Azure Workbooks are true? <i>Select all that apply.</i>`,
+     options:[
+       "Parameters such as a time range can be used by several query steps in the workbook",
+       "One workbook can combine log queries, metrics and text",
+       "A shared workbook is an Azure resource whose access is controlled with RBAC",
+       "Every viewer needs a Power BI Pro license",
+       "A workbook can only query the Log Analytics workspace it was created in"],
+     answer:[0,1,2],
+     hint:`Workbooks are a free part of Azure Monitor.`,
+     why:`Parameters drive many steps, steps can mix data sources (logs, metrics, Resource Graph and more) and text, and saved workbooks are resources governed by RBAC. No Power BI license is involved, and queries can target other resources and workspaces.`},
+    {id:"wb3", type:"mc", title:"Same workbook, different data",
+     q:`You share a workbook with two teams. Team A sees charts full of data; team B sees "no results" in the same workbook. Both can open the workbook. What's the most likely reason?`,
+     options:[
+       "Team B lacks read access to the Log Analytics workspace / resources the queries target",
+       "Workbooks only show data to the person who created them",
+       "Team B's browser blocks the charts",
+       "The workbook needs to be re-pinned to a dashboard for each team"],
+     answer:0,
+     hint:`Whose identity runs the queries?`,
+     why:`Workbook queries run with the viewer's permissions. Access to the workbook resource doesn't grant access to the data behind it, which is good for security but needs planning when sharing.`},
+    {id:"wb4", type:"order", title:"Build a team workbook",
+     q:`Put the steps of building a shared failure-analysis workbook in order.`,
+     items:[
+       "Create a new workbook (or start from a template) in the Application Insights resource",
+       "Add a time range parameter",
+       "Add a log query step that uses the parameter and summarizes failures by bin(timestamp, …)",
+       "Set the step's visualization to a time chart and add explanatory text",
+       "Save the workbook as shared in a resource group the team can read"],
+     hint:`Parameters before the queries that use them; save last.`,
+     why:`Parameters must exist before query steps can reference them; visualisation and text polish the step; saving to a shared resource group (with RBAC) makes it available to the team.`}
+  ]
+},
+/* ================================================================ 10 */
+{
+  group:"Put it together",
+  title:"Mixed scenarios",
+  tag:"exam-style cases across the whole theme",
+  intro:`Exam-style cases that mix infrastructure metrics, Application Insights views, tracing and KQL. Read for the constraint words, then pick the tool or write the query.`,
+  sections:[
+    {h:"A triage path that works", p:`<b>Alert or complaint</b> → <b>Application Map</b> (which component?) → <b>Failures / Performance</b> (which operation, which exception or dependency?) → <b>end-to-end transaction</b> of a sample (root cause) → <b>KQL</b> (how many users, since when?) → <b>infrastructure metrics</b> if the code looks fine (CPU, memory, disk, network) → <b>workbook</b> so the team can reuse the investigation.`}
+  ],
+  tip:`When two answers both work, prefer the built-in feature with the least effort and the one that fits the data type: metrics for fast numeric signals, logs/KQL for detail and correlation.`,
+  exercises:[
+    {id:"sc1", type:"mc", title:"Detect a latency regression",
+     q:`After Tuesday's release, some customers say checkout is slower, but the <b>average</b> response time chart looks unchanged. Which query best shows whether the release hurt the slow tail?`,
+     options:[
+       `requests | where timestamp > ago(7d) and name == "POST /checkout" | summarize percentile(duration, 95) by bin(timestamp, 1h) | render timechart`,
+       `requests | where timestamp > ago(7d) and name == "POST /checkout" | summarize avg(duration) by bin(timestamp, 1h) | render timechart`,
+       `requests | where name == "POST /checkout" | take 100`,
+       `requests | where timestamp > ago(7d) | summarize count() by name`],
+     answer:0,
+     hint:`The average already says "no change".`,
+     why:`P95 per hour over the week shows the slow tail before and after the release. The average hides it, <code>take</code> returns arbitrary rows, and a count says nothing about latency.`},
+    {id:"sc2", type:"kql", title:"Which dependency is slow?",
+     q:`Users report slowness. For the last <b>hour</b>, show each dependency <code>target</code> with its <b>average duration</b> and <b>number of calls</b>, slowest (by average) first.${sch("dependencies", S_DEPS)}`,
+     starter:`dependencies
+`,
+     checks:[
+       {l:"Uses dependencies, last hour", t:q => q.table === "dependencies" && q.where(...TIME("timestamp","1h"))},
+       {l:"summarize avg(duration) and count() by target", t:q => q.sum([["avg(duration)"],["count()","sum(itemCount)"]], ["target"])},
+       {l:"Sorted by the average, highest first", t:q => { const s = q.st("summarize").find(x => x.aggs.includes("avg(duration)")); if (!s) return false;
+          const alias = s.aliases[s.aggs.indexOf("avg(duration)")] ; return [alias, "avg_duration"].filter(Boolean).some(a => q.sortedDesc(a)); }}
+     ],
+     cols:["dependencies","timestamp","duration","target"],
+     solution:`dependencies
+| where timestamp > ago(1h)
+| summarize AvgMs = avg(duration), Calls = count() by target
+| order by AvgMs desc`,
+     accept:[`dependencies | where timestamp > ago(1h) | summarize Calls = count(), avg(duration) by target | top 20 by avg_duration`],
+     reject:[`dependencies | where timestamp > ago(1h) | summarize AvgMs = avg(duration), Calls = count() by target | order by Calls desc`],
+     hint:`When you give the aggregates aliases, sort by the alias.`,
+     why:`Grouping dependency calls by <code>target</code> shows which downstream system adds latency; the call count tells you whether it matters (a slow call made once a day is less urgent than one made on every request). This is the KQL behind the Performance view's Dependencies tab.`},
+    {id:"sc3", type:"kql", title:"Exception trend in the workspace",
+     q:`In the <b>Log Analytics workspace</b>, chart the number of exceptions per <b>hour</b> for the last <b>24 hours</b>, one line per <code>ExceptionType</code>.${sch("AppExceptions", ["TimeGenerated:datetime","ExceptionType:string","OuterMessage:string","ProblemId:string","SeverityLevel:int","OperationId:string","AppRoleName:string"])}`,
+     starter:`AppExceptions
+`,
+     checks:[
+       {l:"Uses AppExceptions, last 24 hours on TimeGenerated", t:q => q.table === "appexceptions" && q.where(...TIME("TimeGenerated","24h"))},
+       {l:"summarize count() by bin(TimeGenerated, 1h), ExceptionType", t:q => q.sum([["count()","sum(ItemCount)"]], [["bin(TimeGenerated, 1h)","floor(TimeGenerated, 1h)"], "ExceptionType"])},
+       {l:"render timechart", t:q => q.render("timechart")}
+     ],
+     cols:["AppExceptions","TimeGenerated","ExceptionType","ItemCount"],
+     solution:`AppExceptions
+| where TimeGenerated > ago(24h)
+| summarize Exceptions = count() by bin(TimeGenerated, 1h), ExceptionType
+| render timechart`,
+     accept:[`AppExceptions | where TimeGenerated > ago(1d) | summarize count() by ExceptionType, bin(TimeGenerated, 60m) | render timechart`],
+     reject:[`AppExceptions | where timestamp > ago(24h) | summarize count() by bin(timestamp, 1h), type | render timechart`,
+             `AppExceptions | where TimeGenerated > ago(24h) | summarize count() by bin(TimeGenerated, 1h) | render timechart`],
+     hint:`Workspace names: <code>TimeGenerated</code> and <code>ExceptionType</code>. A second group key gives one line per value.`,
+     why:`Two group keys, a datetime bin plus a category, make <code>render timechart</code> draw one series per <code>ExceptionType</code>. The classic names (<code>timestamp</code>, <code>type</code>) don't exist in <code>AppExceptions</code>.`},
+    {id:"sc4", type:"mc", title:"Slow VM, idle CPU",
+     q:`A SQL Server VM is slow at month end. Metrics show Percentage CPU at 25%, Available Memory Bytes healthy, and <b>Data Disk IOPS Consumed Percentage at 100%</b> for hours. What should you recommend?`,
+     options:[
+       "Move the data disk to a higher-performance tier or size (and check the VM size's disk limits)",
+       "Scale the VM to more vCPUs only",
+       "Add more memory",
+       "Enable Live Metrics on the VM"],
+     answer:0,
+     hint:`Which resource is saturated?`,
+     why:`The disk is capped at its provisioned IOPS, so I/O queues up while CPU and memory sit idle. A faster disk tier or larger disk (with a VM size whose limits allow it) removes the bottleneck. More vCPUs or memory don't help I/O throttling.`},
+    {id:"sc5", type:"mc", title:"Red node on the map",
+     q:`Application Map shows the <b>orders-api</b> node with a red ring and the arrow to <b>sql-orders</b> reporting 28% failed calls. What's the most direct next step?`,
+     options:[
+       "Select the failing dependency and investigate it in the Failures view (Dependencies tab), then open a sample's end-to-end transaction",
+       "Scale out the App Service plan of orders-api",
+       "Open Usage → Funnels for the checkout flow",
+       "Delete and recreate the Application Insights resource"],
+     answer:0,
+     hint:`The map already points to a failing dependency; go from overview to detail.`,
+     why:`The map localises the problem to the orders-api → SQL dependency. The Failures view's Dependencies tab shows the failing call's result codes and exceptions, and a sample transaction shows the exact error in context. Scaling or usage tools don't diagnose a failing dependency.`},
+    {id:"sc6", type:"kql", title:"Which exceptions break requests?",
+     q:`For failed requests in the last <b>24 hours</b>, find which exception types occurred in the same operation. Join to <code>exceptions</code> (last 24 hours, projected to <code>operation_Id</code> and <code>ExceptionType = type</code>) with <code>kind=inner</code> on <code>operation_Id</code>, then count per request <code>name</code> and <code>ExceptionType</code>, highest count first.${sch("requests", S_REQUESTS)}${sch("exceptions", S_EXC)}`,
+     starter:`requests
+`,
+     checks:[
+       {l:"Failed requests, last 24 hours", t:q => q.table === "requests" && q.where(...TIME("timestamp","24h")) && q.where(...FAILED("success"))},
+       {l:"join kind=inner (exceptions …) on operation_Id", t:q => q.st("join").some(s => /^join kind=inner\(/.test(s.s) && /on (operation_id|\$left\.operation_id==\$right\.operation_id)$/.test(s.s)) && q.sub("join").table === "exceptions"},
+       {l:"Right side: last 24 hours, project operation_Id, ExceptionType = type", t:q => { const r = q.sub("join"); return r.where(...TIME("timestamp","24h")) && r.st("project").some(s => s.items.some(i => i.e === "operation_id") && s.items.some(i => i.alias === "exceptiontype" && i.e === "type")); }},
+       {l:"summarize count() by name, ExceptionType", t:q => q.sum([["count()"]], ["name","ExceptionType"])},
+       {l:"Highest count first", t:q => { const s = q.sumStage(); return !!s && (s.aliases.length ? s.aliases : ["count_"]).some(a => q.sortedDesc(a)); }}
+     ],
+     cols:["requests","exceptions","timestamp","success","operation_Id","ExceptionType","name"],
+     solution:`requests
+| where timestamp > ago(24h) and success == false
+| join kind=inner (
+    exceptions
+    | where timestamp > ago(24h)
+    | project operation_Id, ExceptionType = type
+  ) on operation_Id
+| summarize Occurrences = count() by name, ExceptionType
+| order by Occurrences desc`,
+     accept:[`requests | where timestamp > ago(1d) | where success == false | join kind=inner (exceptions | where timestamp > ago(1d) | project operation_Id, ExceptionType=type) on $left.operation_Id == $right.operation_Id | summarize count() by ExceptionType, name | top 10 by count_`],
+     reject:[`requests | where timestamp > ago(24h) and success == false | join kind=inner (exceptions | where timestamp > ago(24h)) on operation_Id | summarize count() by name, type | order by count_ desc`],
+     hint:`Project inside the join's subquery so only the key and the renamed column come across.`,
+     why:`Projecting the right side down to the key and the columns you need keeps the join cheap and avoids <code>name1</code>/<code>timestamp1</code> clutter. Joining on <code>operation_Id</code> ties each failed request to the exceptions thrown anywhere in that operation, including in downstream services.`},
+    {id:"sc7", type:"mc", title:"The right tool for the release window",
+     q:`During a 15-minute production rollout, the release manager wants to watch request rate, failure rate and server CPU <b>in real time</b> and stop the rollout immediately if failures jump. No historical analysis is needed. What should the team use?`,
+     options:["Live Metrics","A workbook refreshed every 5 minutes","A KQL query in Log Analytics","The Retention tool"],
+     answer:0,
+     hint:`Seconds, not minutes.`,
+     why:`Live Metrics streams with about one second of latency, exactly for watching deployments. Log queries and workbooks depend on ingestion latency (typically minutes), and Retention is a usage tool.`},
+    {id:"sc8", type:"order", title:"From alert to shared knowledge",
+     q:`Order the steps of a complete investigation of a production slowdown.`,
+     items:[
+       "An alert fires: P95 response time above target",
+       "Application Map shows which component and dependency are slow",
+       "The Performance view and a slow sample's end-to-end transaction pinpoint the slow call",
+       "A KQL query quantifies how many operations and users were affected since when",
+       "Infrastructure metrics of the dependency (CPU, disk IOPS) confirm it was saturated",
+       "The queries are saved into a team workbook for next time"],
+     hint:`Detect → locate → pinpoint → quantify → confirm cause → share.`,
+     why:`Each step narrows the problem: the alert detects it, the map locates it, the transaction pinpoints it, KQL measures impact, infrastructure metrics explain the cause, and a workbook preserves the investigation for the team.`}
+  ]
+}
+];
+
+/* ===================================================================
+   KQL NORMALISER + QUERY API (pure functions, no DOM)
+   The checker never runs a query. It tokenises it, then compares a
+   canonical form:
+     - comments removed, whitespace ignored
+     - keywords/identifiers compared case-insensitively ("cols" on an
+       exercise adds a separate, case-sensitive check for table/column names)
+     - 'single' and "double" quoted strings are the same
+     - timespans canonicalised: 1h == 60m == 3600s, 1d == 24h
+     - synonyms: limit → take, sort → order, filter → where
+     - aliases (X = count()) are ignored when comparing aggregations
+     - "where a and b" == "where a | where b"
+   =================================================================== */
+const TS_UNITS = {d:86400, day:86400, days:86400, h:3600, hr:3600, hrs:3600, hour:3600, hours:3600,
+  m:60, min:60, minute:60, minutes:60, s:1, sec:1, second:1, seconds:1,
+  ms:0.001, milli:0.001, millis:0.001, millisecond:0.001, milliseconds:0.001};
+const KQL_HYPHEN = new Set(["make-series","project-away","project-rename","project-reorder","project-keep",
+  "mv-expand","mv-apply","parse-where","top-nested","top-hitters","parse-kv"]);
+const SYN = {limit:"take", sort:"order", filter:"where"};
+
+function kqlTokens(src){
+  const out = [], s = String(src || "").replace(/\r/g, "");
+  let i = 0;
+  while (i < s.length){
+    const ch = s[i];
+    if (/\s/.test(ch)){ i++; continue; }
+    if (ch === "/" && s[i + 1] === "/"){ while (i < s.length && s[i] !== "\n") i++; continue; }
+    if (ch === '"' || ch === "'" || (ch === "@" && (s[i + 1] === '"' || s[i + 1] === "'"))){
+      const verb = ch === "@"; let j = verb ? i + 1 : i; const q = s[j]; j++; let v = "";
+      while (j < s.length && s[j] !== q && s[j] !== "\n"){
+        if (!verb && s[j] === "\\" && j + 1 < s.length){ v += s[j] + s[j + 1]; j += 2; continue; }
+        v += s[j]; j++;
+      }
+      out.push({t:"s", v:'"' + v.toLowerCase() + '"', o:v}); i = j + 1; continue;
+    }
+    if (/\d/.test(ch)){
+      const m = s.slice(i).match(/^(\d+(?:\.\d+)?)([a-zA-Z]+)?/);
+      let v = m[0].toLowerCase();
+      const u = m[2] && m[2].toLowerCase();
+      if (u && TS_UNITS[u] !== undefined) v = "ts:" + (+(parseFloat(m[1]) * TS_UNITS[u]).toFixed(6));
+      out.push({t:"n", v, o:m[0]}); i += m[0].length; continue;
+    }
+    if (/[A-Za-z_$]/.test(ch) || (ch === "!" && /[A-Za-z]/.test(s[i + 1] || ""))){
+      const m = s.slice(i).match(/^!?[A-Za-z_$][\w$]*/);
+      let v = m[0].toLowerCase(), o = m[0]; i += m[0].length;
+      const h = s.slice(i).match(/^\s*-\s*([A-Za-z]+)/);
+      if (h && KQL_HYPHEN.has(v + "-" + h[1].toLowerCase())){ v += "-" + h[1].toLowerCase(); o += "-" + h[1]; i += h[0].length; }
+      out.push({t:"w", v, o}); continue;
+    }
+    const m3 = s.slice(i).match(/^(==|!=|=~|!~|>=|<=|\.\.)/);
+    const p = m3 ? m3[0] : ch;
+    out.push({t:"p", v:p, o:p}); i += p.length;
+  }
+  return out;
+}
+const isWordTok = t => t.t === "w" || t.t === "n";
+function kjoin(toks){
+  let o = "";
+  toks.forEach((t, k) => { if (k && isWordTok(t) && isWordTok(toks[k - 1])) o += " "; o += t.v; });
+  return o;
+}
+function ksplit(toks, isSep){
+  const parts = [[]]; let d = 0;
+  for (const t of toks){
+    if (t.t === "p" && "([{".includes(t.v)) d++;
+    if (t.t === "p" && ")]}".includes(t.v)) d--;
+    if (d === 0 && isSep(t)){ parts.push([]); continue; }
+    parts[parts.length - 1].push(t);
+  }
+  return parts.filter(p => p.length);
+}
+// Canonical compact form of a snippet (used for the expected side of checks)
+const K = s => kjoin(kqlTokens(s));
+function stripParens(s){
+  while (s.startsWith("(") && s.endsWith(")")){
+    let d = 0, ok = true;
+    for (let i = 0; i < s.length; i++){
+      if (s[i] === "(") d++; else if (s[i] === ")") d--;
+      if (d === 0 && i < s.length - 1){ ok = false; break; }
+    }
+    if (!ok) break;
+    s = s.slice(1, -1);
+  }
+  return s;
+}
+function stripAlias(it){
+  if (it.length > 2 && it[0].t === "w" && it[1].t === "p" && it[1].v === "=") return {alias:it[0].v, toks:it.slice(2)};
+  return {alias:null, toks:it};
+}
+function mkStage(toks){
+  toks = toks.slice();
+  if (toks[0] && toks[0].t === "w" && SYN[toks[0].v]) toks[0] = {...toks[0], v:SYN[toks[0].v]};
+  const st = {op: toks[0] ? toks[0].v : "", toks, s: kjoin(toks)};
+  if (st.op === "where") st.preds = ksplit(toks.slice(1), t => t.t === "w" && t.v === "and").map(p => stripParens(kjoin(p)));
+  if (st.op === "summarize"){
+    const rest = toks.slice(1); let d = 0, idx = -1;
+    rest.forEach((t, k) => {
+      if (t.t === "p" && "([{".includes(t.v)) d++;
+      if (t.t === "p" && ")]}".includes(t.v)) d--;
+      if (d === 0 && idx < 0 && t.t === "w" && t.v === "by") idx = k;
+    });
+    const aggT = idx < 0 ? rest : rest.slice(0, idx), byT = idx < 0 ? [] : rest.slice(idx + 1);
+    const items = ts => ksplit(ts, t => t.t === "p" && t.v === ",").map(stripAlias);
+    st.aggs = items(aggT).map(x => kjoin(x.toks));
+    st.aliases = items(aggT).map(x => x.alias).filter(Boolean);
+    st.by = items(byT).map(x => kjoin(x.toks));
+  }
+  if (st.op === "extend" || st.op === "project"){
+    st.items = ksplit(toks.slice(1), t => t.t === "p" && t.v === ",").map(stripAlias).map(x => ({alias:x.alias, e:kjoin(x.toks)}));
+  }
+  // first parenthesised sub-query (join / union / lookup)
+  const open = toks.findIndex(t => t.t === "p" && t.v === "(");
+  if (["join","lookup","union"].includes(st.op) && open >= 0){
+    let d = 0, close = -1;
+    for (let k = open; k < toks.length; k++){
+      if (toks[k].t === "p" && toks[k].v === "(") d++;
+      if (toks[k].t === "p" && toks[k].v === ")"){ d--; if (d === 0){ close = k; break; } }
+    }
+    if (close > open) st.subToks = toks.slice(open + 1, close);
+  }
+  return st;
+}
+function kqlApi(src){
+  const toks = Array.isArray(src) ? src : kqlTokens(src);
+  const stmts = ksplit(toks, t => t.t === "p" && t.v === ";");
+  const lets = {}, pieces = [];
+  let main = [], all = [];
+  stmts.forEach(st => {
+    let body = st, prefix = "";
+    if (st[0].t === "w" && st[0].v === "let" && st[1] && st[2] && st[2].t === "p" && st[2].v === "="){
+      body = st.slice(3); prefix = "let " + st[1].v + "=";
+      lets[st[1].v] = kjoin(body);
+    }
+    const stages = ksplit(body, t => t.t === "p" && t.v === "|").map(mkStage);
+    all = all.concat(stages);
+    pieces.push(prefix + stages.map(s => s.s).join("|"));
+    if (!prefix) main = stages;
+  });
+  const alts = a => (Array.isArray(a) ? a : [a]).map(K);
+  const ops = main.map(s => s.op);
+  const api = {
+    src: String(Array.isArray(src) ? kjoin(src) : src), toks, lets, main, all, ops,
+    c: pieces.join(";"),
+    table: main[0] ? main[0].s : "",
+    // compact text contains any of the snippets
+    inc: (...a) => a.flatMap(x => alts(x)).some(x => pieces.join(";").includes(x)),
+    st: op => main.filter(s => s.op === op),
+    idx: op => ops.indexOf(op),
+    lastIdx: op => ops.lastIndexOf(op),
+    // some where predicate (anywhere, incl. let statements) equals one of the alternatives
+    where: (...a) => { const want = a.flatMap(x => alts(x)); return all.some(s => s.op === "where" && s.preds.some(p => want.includes(p))); },
+    whereRe: re => all.some(s => s.op === "where" && s.preds.some(p => re.test(p))),
+    // index of the first main-pipeline where stage containing a matching predicate
+    whereIdx: re => main.findIndex(s => s.op === "where" && s.preds.some(p => re.test(p))),
+    // summarize with these aggregations (each an alternative list) and exactly these by-columns (order-free)
+    sum(aggs, by){
+      return main.some(s => {
+        if (s.op !== "summarize") return false;
+        if (!aggs.every(a => s.aggs.some(x => alts(a).includes(x)))) return false;
+        if (by === undefined) return true;
+        if (s.by.length !== by.length) return false;
+        const left = s.by.slice();
+        return by.every(b => { const i = left.findIndex(x => alts(b).includes(x)); if (i < 0) return false; left.splice(i, 1); return true; });
+      });
+    },
+    sumStage: () => main.find(s => s.op === "summarize"),
+    // sorted descending by col: order by col [desc] or top N by col [desc]
+    sortedDesc: col => main.some(s =>
+      (s.op === "order" && [K(`order by ${col}`), K(`order by ${col} desc`)].includes(s.s)) ||
+      (s.op === "top" && new RegExp(`^top \\d+ by ${K(col).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}( desc)?$`).test(s.s))),
+    sortedAsc: col => main.some(s => s.op === "order" && s.s === K(`order by ${col} asc`)),
+    limited: n => main.some(s => s.s === K(`take ${n}`) || new RegExp(`^top ${n} by `).test(s.s)),
+    render: kind => main.some(s => s.op === "render" && (s.s === "render " + kind || s.s.startsWith("render " + kind + " "))),
+    before: (a, b) => { const i = ops.indexOf(a); return i >= 0 && ops.lastIndexOf(b) > i; },
+    sub: op => { const s = main.find(x => x.op === op && x.subToks); return s ? kqlApi(s.subToks) : kqlApi(""); }
+  };
+  return api;
+}
+// common equivalent predicates
+const TIME = (col, span) => [`${col} > ago(${span})`, `${col} >= ago(${span})`, `ago(${span}) < ${col}`, `${col} between (ago(${span}) .. now())`];
+const FAILED = col => [`${col} == false`, `${col} == "False"`, `not(${col})`, `${col} != true`, `${col} == 0`];
+
+/* ===================================================================
+   CHECKING (pure functions, no DOM: also used by the self-test)
+   =================================================================== */
+const norm = s => String(s).trim().replace(/\s+/g, " ").toLowerCase();
+const normFill = s => norm(s).replace(/\s*([^\w\s])\s*/g, "$1").replace(/'/g, '"');
+
+function caseCheck(ex, toks){
+  const want = new Map(ex.cols.map(c => [c.toLowerCase(), c]));
+  // names the user defines (aliases / let) are theirs to spell: X = …
+  const own = new Set(toks.filter((t, k) => t.t === "w" && toks[k + 1] && toks[k + 1].t === "p" && toks[k + 1].v === "=").map(t => t.o));
+  const bad = [...new Set(toks.filter(t => t.t === "w" && want.has(t.v) && t.o !== want.get(t.v) && !own.has(t.o)).map(t => `${t.o} → ${want.get(t.v)}`))];
+  return {l:`Table and column names use the exact casing (${ex.cols.join(", ")})`, ok: bad.length === 0, sub: bad};
+}
+
+// Returns {ok, results:[{l, ok, sub?}], marks}
+function grade(ex, ans){
+  switch (ex.type){
+    case "mc": {
+      const ok = ans === ex.answer;
+      return {ok, results:[{l: ans === null || ans === undefined ? "Pick an answer first." : ok ? "Correct!" : "Not quite. Read the hint and try again.", ok}]};
+    }
+    case "multi": {
+      const sel = ans || [];
+      const missing = ex.answer.filter(i => !sel.includes(i)).length;
+      const extra = sel.filter(i => !ex.answer.includes(i)).length;
+      const ok = missing === 0 && extra === 0;
+      const r = [];
+      if (ok) r.push({l:"Correct! You found exactly the right options.", ok:true});
+      else {
+        r.push({l: missing ? `${missing} correct option${missing > 1 ? "s" : ""} not selected` : "All correct options selected", ok: !missing});
+        r.push({l: extra ? `${extra} selected option${extra > 1 ? "s are" : " is"} wrong` : "No wrong options selected", ok: !extra});
+      }
+      return {ok, results:r};
+    }
+    case "order": {
+      const seq = ans || [];
+      const marks = seq.map((it, pos) => it === pos);
+      const right = marks.filter(Boolean).length;
+      const ok = right === ex.items.length;
+      return {ok, marks, results:[{l: ok ? "Correct order!" : `${right}/${ex.items.length} items are in the right position.`, ok}]};
+    }
+    case "match": {
+      const sel = ans || [];
+      const marks = ex.rows.map((r, i) => sel[i] === r[1]);
+      const right = marks.filter(Boolean).length;
+      const ok = right === ex.rows.length;
+      return {ok, marks, results:[{l: ok ? "All matches correct!" : `${right}/${ex.rows.length} matches correct.`, ok}]};
+    }
+    case "fill": {
+      const vals = ans || [];
+      const marks = ex.blanks.map((acc, i) => acc.some(a => normFill(a) === normFill(vals[i] || "")));
+      const right = marks.filter(Boolean).length;
+      const ok = right === ex.blanks.length;
+      return {ok, marks, results:[{l: ok ? "All blanks correct!" : `${right}/${ex.blanks.length} blanks correct.`, ok}]};
+    }
+    case "lines": {
+      const sel = ans || [];
+      const missing = ex.answer.filter(i => !sel.includes(i)).length;
+      const extra = sel.filter(i => !ex.answer.includes(i)).length;
+      const ok = missing === 0 && extra === 0;
+      const r = ok ? [{l:"Correct! You spotted exactly the right lines.", ok:true}] : [
+        {l: missing ? `${missing} line${missing > 1 ? "s" : ""} still to find` : "You found every faulty line", ok: !missing},
+        {l: extra ? `${extra} selected line${extra > 1 ? "s are" : " is"} actually fine` : "No correct lines selected by mistake", ok: !extra}];
+      return {ok, results:r};
+    }
+    case "kql": {
+      const text = String(ans || "").replace(/\r/g, "");
+      const q = kqlApi(text);
+      const results = [];
+      results.push({l:"Query is not empty and starts with a table (or a let statement)", ok: q.main.length > 0 && /^[a-z_]/.test(q.table) && !q.table.startsWith("|")});
+      for (const c of ex.checks){
+        let ok = false;
+        try { ok = !!c.t(q); } catch (e) { ok = false; }
+        results.push({l:c.l, ok});
+      }
+      if (ex.cols) results.push(caseCheck(ex, q.toks));
+      return {ok: results.every(r => r.ok), results};
+    }
+  }
+  return {ok:false, results:[]};
+}
+
+function modelAnswer(ex){
+  switch (ex.type){
+    case "mc": return ex.answer;
+    case "multi": case "lines": return ex.answer.slice();
+    case "order": return ex.items.map((_, i) => i);
+    case "match": return ex.rows.map(r => r[1]);
+    case "fill": return ex.blanks.map(b => b[0]);
+    case "kql": return ex.solution;
+  }
+}
+
+function scramble(id, n){
+  let seed = 0; for (const ch of id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const a = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  if (a.every((v, i) => v === i)) a.reverse();
+  return a;
+}
+
+const ALL_EX = MODULES.flatMap(m => m.exercises);
+
+/* ===================================================================
+   HIGHLIGHTER (tiny, dependency-free)
+   =================================================================== */
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const KQL_KW = new Set(("let where project project-away project-rename project-keep extend summarize by order sort asc desc take limit top join kind on " +
+  "render make-series from to step default union and or has !has contains !contains startswith endswith in !in between count distinct mv-expand parse with " +
+  "inner innerunique leftouter rightouter fullouter leftanti rightanti leftsemi rightsemi timechart barchart columnchart piechart areachart scatterchart linechart table " +
+  "true false lookup search as nulls first last isfuzzy filter").split(" "));
+const KQL_TABLES = /^(requests|dependencies|exceptions|traces|pageViews|customEvents|customMetrics|availabilityResults|performanceCounters|browserTimings|App[A-Z]\w*|Perf|Heartbeat|AzureActivity|AzureDiagnostics|AzureMetrics|InsightsMetrics|Event|Syslog|ContainerLogV2|KubePodInventory|KubeEvents|Usage)$/;
+function hlKql(code){
+  const re = /(\/\/.*$)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|(\b\d+(?:\.\d+)?(?:ms|min|d|h|m|s)?\b)|(!?[A-Za-z_$][\w$]*(?:-(?:series|away|rename|keep|expand))?)(\s*\()?|(\||==|!=|=~|>=|<=)/gm;
+  let out = "", last = 0, m;
+  while ((m = re.exec(code))){
+    out += esc(code.slice(last, m.index)); last = re.lastIndex;
+    if (m[1]) out += `<span class="tc">${esc(m[1])}</span>`;
+    else if (m[2]) out += `<span class="ts">${esc(m[2])}</span>`;
+    else if (m[3]) out += `<span class="tn">${esc(m[3])}</span>`;
+    else if (m[4]){
+      const w = m[4];
+      if (m[5]) out += `<span class="td">${esc(w)}</span>${esc(m[5])}`;
+      else if (KQL_KW.has(w.toLowerCase())) out += `<span class="tk">${esc(w)}</span>`;
+      else if (KQL_TABLES.test(w)) out += `<span class="tt">${esc(w)}</span>`;
+      else out += esc(w);
+    }
+    else out += `<span class="tdash">${esc(m[6])}</span>`;
+  }
+  return out + esc(code.slice(last));
+}
+function hlText(code){
+  return code.split("\n").map(line => {
+    const m = line.match(/^(.*?)(\s+#\s.*)?$/);
+    return esc(m[1]).replace(/\b([0-9a-f]{16,32})\b/g, '<span class="td">$1</span>') + (m[2] ? `<span class="tc">${esc(m[2])}</span>` : "");
+  }).join("\n");
+}
+function highlight(code, lang){ return lang === "text" ? hlText(code) : hlKql(code); }
+function codeBlock(code, lang){
+  return `<div class="codewrap"><pre><code>${highlight(code, lang || "kql")}</code></pre><button class="copy">Copy</button></div>`;
+}
+// schema helper used in exercise text
+function sch(table, cols){
+  return `<div class="schema"><span class="sname">${table}</span>${cols.map(c => { const [n, t] = c.split(":"); return `<span class="col">${n}${t ? `<i>${t}</i>` : ""}</span>`; }).join("")}</div>`;
+}
+
+/* ===================================================================
+   UI
+   =================================================================== */
+const KIND = {mc:"Single choice", multi:"Select all that apply", order:"Put in order", match:"Match", fill:"Fill in the blanks", lines:"Spot the error", kql:"Write the query"};
+const LS = "telemetryLab:";
+
+function startApp(){
+  const store = {
+    get(k, d){ try { const v = localStorage.getItem(LS + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v){ try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch {} }
+  };
+  let done = store.get("done", []).filter(id => ALL_EX.some(e => e.id === id));
+  let current = Math.min(store.get("current", 0), MODULES.length - 1);
+  const $ = s => document.querySelector(s);
+  const state = {};
+  const modDone = m => m.exercises.filter(e => done.includes(e.id)).length;
+
+  function renderNav(){
+    let html = "", lastGroup = "";
+    MODULES.forEach((m, i) => {
+      if (m.group !== lastGroup){ html += `<div class="group">${m.group}</div>`; lastGroup = m.group; }
+      const n = modDone(m), all = n === m.exercises.length;
+      const cls = [i === current ? "active" : "", all ? "done" : ""].join(" ");
+      html += `<button class="${cls}" data-i="${i}"><span class="num">${all ? "✓" : i + 1}</span>${m.title}<span class="cnt">${n}/${m.exercises.length}</span></button>`;
+    });
+    $("#nav").innerHTML = html;
+    $("#bar").style.width = (done.length / ALL_EX.length * 100) + "%";
+    $("#ptext").textContent = `${done.length} of ${ALL_EX.length} exercises completed`;
+  }
+
+  function bodyHtml(ex){
+    const sid = ex.id;
+    switch (ex.type){
+      case "mc": case "multi":
+        return `<div class="opts">${ex.options.map((o, i) =>
+          `<label class="opt" data-i="${i}"><input type="${ex.type === "mc" ? "radio" : "checkbox"}" name="${sid}" value="${i}"><span>${o}</span></label>`).join("")}</div>`;
+      case "order":
+        return `<ol class="order" id="ol-${sid}"></ol>`;
+      case "match":
+        return `<table class="match">${ex.rows.map((r, i) =>
+          `<tr data-i="${i}"><td>${r[0]}</td><td><select aria-label="Answer ${i + 1}"><option value="">— choose —</option>${ex.choices.map(c => `<option>${esc(c)}</option>`).join("")}</select></td></tr>`).join("")}</table>`;
+      case "fill": {
+        const html = ex.tpl.replace(/\[\[(\d+)\]\]/g, (_, n) => {
+          const w = Math.max(6, ...ex.blanks[+n].map(b => b.length)) + 2;
+          return `<input data-b="${n}" size="${w}" aria-label="Blank ${+n + 1}" autocomplete="off" spellcheck="false">`;
+        });
+        return `<div class="fill${ex.mono ? " mono" : ""}">${html}</div>`;
+      }
+      case "lines":
+        return `<div class="lines${ex.prose ? " prose" : ""}">${ex.code.map((l, i) =>
+          `<div class="ln" data-i="${i}" role="button" tabindex="0"><span class="no">${i + 1}</span><span>${esc(l) || " "}</span></div>`).join("")}</div>`;
+      case "kql":
+        return `<textarea class="kqled" spellcheck="false" aria-label="KQL query editor"></textarea>
+          <p class="edhelp">Tab inserts 2 spaces · Ctrl+Enter checks your answer · your draft is saved automatically · the checker forgives keyword casing and spacing, but the real Log Analytics engine is case-sensitive</p>`;
+    }
+  }
+
+  function solutionHtml(ex){
+    switch (ex.type){
+      case "mc": return `<p><b>Answer:</b> ${ex.options[ex.answer]}</p>`;
+      case "multi": return `<ul class="tips">${ex.answer.map(i => `<li>${ex.options[i]}</li>`).join("")}</ul>`;
+      case "order": return `<ol class="tips">${ex.items.map(t => `<li>${t}</li>`).join("")}</ol>`;
+      case "match": return `<div class="tablewrap"><table class="ref">${ex.rows.map(r => `<tr><td>${r[0]}</td><td><b>${esc(r[1])}</b></td></tr>`).join("")}</table></div>`;
+      case "fill": {
+        const html = ex.tpl.replace(/\[\[(\d+)\]\]/g, (_, n) => `<b><u>${esc(ex.blanks[+n][0])}</u></b>`);
+        return `<div class="fill${ex.mono ? " mono" : ""}">${html}</div>`;
+      }
+      case "lines": return `<p>Faulty line${ex.answer.length > 1 ? "s" : ""}: ${ex.answer.map(i => `<b>${i + 1}</b>`).join(", ")}</p>`;
+      case "kql": return codeBlock(ex.solution, "kql");
+    }
+  }
+
+  function wireExercise(ex, root){
+    const id = ex.id;
+    const q = s => root.querySelector(s);
+    const draftKey = "draft:" + id;
+
+    if (ex.type === "mc"){
+      root.querySelectorAll("input").forEach(inp => inp.onchange = () => { state[id] = +inp.value; clearMarks(); });
+      state[id] = null;
+    }
+    if (ex.type === "multi"){
+      state[id] = [];
+      root.querySelectorAll("input").forEach(inp => inp.onchange = () => {
+        state[id] = [...root.querySelectorAll("input:checked")].map(x => +x.value); clearMarks();
+      });
+    }
+    if (ex.type === "order"){
+      state[id] = scramble(id, ex.items.length);
+      const ol = q(".order");
+      let dragFrom = null;
+      const draw = (marks) => {
+        ol.innerHTML = state[id].map((it, pos) =>
+          `<li draggable="true" data-pos="${pos}" class="${marks ? (marks[pos] ? "right" : "wrong") : ""}"><span class="pos">${pos + 1}</span><span class="txt">${ex.items[it]}</span>
+            <span class="mv"><button class="btn small" data-mv="-1" ${pos === 0 ? "disabled" : ""} aria-label="Move up">↑</button><button class="btn small" data-mv="1" ${pos === ex.items.length - 1 ? "disabled" : ""} aria-label="Move down">↓</button></span></li>`).join("");
+      };
+      const move = (from, to) => { const a = state[id]; const [x] = a.splice(from, 1); a.splice(to, 0, x); draw(); };
+      ol.onclick = e => {
+        const b = e.target.closest("button[data-mv]"); if (!b) return;
+        const pos = +b.closest("li").dataset.pos, to = pos + +b.dataset.mv;
+        if (to >= 0 && to < ex.items.length) move(pos, to);
+      };
+      ol.addEventListener("dragstart", e => { const li = e.target.closest("li"); if (li){ dragFrom = +li.dataset.pos; e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", ""); } catch {} } });
+      ol.addEventListener("dragover", e => { if (dragFrom !== null) e.preventDefault(); });
+      ol.addEventListener("drop", e => { e.preventDefault(); const li = e.target.closest("li"); if (li && dragFrom !== null) move(dragFrom, +li.dataset.pos); dragFrom = null; });
+      ol.addEventListener("dragend", () => { dragFrom = null; });
+      root._draw = draw;
+      draw();
+    }
+    if (ex.type === "match"){
+      state[id] = ex.rows.map(() => "");
+      root.querySelectorAll("select").forEach((s, i) => s.onchange = () => { state[id][i] = s.value; s.closest("tr").className = ""; });
+    }
+    if (ex.type === "fill"){
+      state[id] = ex.blanks.map(() => "");
+      root.querySelectorAll(".fill input").forEach(inp => {
+        inp.oninput = () => { state[id][+inp.dataset.b] = inp.value; inp.className = ""; };
+        inp.onkeydown = e => { if (e.key === "Enter"){ e.preventDefault(); check(); } };
+      });
+    }
+    if (ex.type === "lines"){
+      state[id] = [];
+      const toggle = el => {
+        const i = +el.dataset.i, a = state[id];
+        if (a.includes(i)) a.splice(a.indexOf(i), 1); else a.push(i);
+        root.querySelectorAll(".ln").forEach(l => l.className = "ln" + (a.includes(+l.dataset.i) ? " sel" : ""));
+      };
+      root.querySelectorAll(".ln").forEach(el => {
+        el.onclick = () => toggle(el);
+        el.onkeydown = e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(el); } };
+      });
+    }
+    if (ex.type === "kql"){
+      const ed = q("textarea");
+      const saved = store.get(draftKey, null);
+      ed.value = saved !== null ? saved : ex.starter;
+      state[id] = ed.value;
+      const save = () => { state[id] = ed.value; store.set(draftKey, ed.value); };
+      const insert = t => {
+        ed.focus();
+        if (!document.execCommand || !document.execCommand("insertText", false, t)){
+          const s = ed.selectionStart, en = ed.selectionEnd;
+          ed.value = ed.value.slice(0, s) + t + ed.value.slice(en);
+          ed.selectionStart = ed.selectionEnd = s + t.length;
+          save();
+        }
+      };
+      ed.addEventListener("input", save);
+      ed.addEventListener("keydown", e => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); check(); return; }
+        if (e.key === "Tab" && !e.shiftKey){ e.preventDefault(); insert("  "); }
+      });
+    }
+
+    function clearMarks(){ root.querySelectorAll(".opt").forEach(o => o.classList.remove("right", "wrong")); }
+
+    function check(){
+      const g = grade(ex, state[id]);
+      if (ex.type === "mc" || ex.type === "multi"){
+        clearMarks();
+        const sel = ex.type === "mc" ? (state[id] === null ? [] : [state[id]]) : state[id];
+        sel.forEach(i => root.querySelector(`.opt[data-i="${i}"]`).classList.add(
+          (ex.type === "mc" ? i === ex.answer : ex.answer.includes(i)) ? "right" : "wrong"));
+      }
+      if (ex.type === "order") root._draw(g.marks);
+      if (ex.type === "match") root.querySelectorAll(".match tr").forEach((tr, i) => tr.className = g.marks[i] ? "right" : "wrong");
+      if (ex.type === "fill") root.querySelectorAll(".fill input").forEach(inp => inp.className = g.marks[+inp.dataset.b] ? "right" : "wrong");
+      if (ex.type === "lines") root.querySelectorAll(".ln").forEach(l => {
+        const i = +l.dataset.i, sel = state[id].includes(i);
+        l.className = "ln" + (sel ? (ex.answer.includes(i) ? " right" : " wrong") : "");
+      });
+      q(".results").innerHTML = g.results.map(r =>
+        `<li class="${r.ok ? "pass" : "fail"}">${r.ok ? "✔" : "✘"} ${esc(r.l)}${(r.sub || []).map(s => `<span class="sub">↳ ${esc(s)}</span>`).join("")}</li>`).join("") +
+        (ex.type === "kql" ? `<li class="${g.ok ? "pass" : "fail"}"><b>${g.results.filter(r => r.ok).length}/${g.results.length} checks passed${g.ok ? ". Nice work! 🎉" : ""}</b></li>` : "");
+      if (g.ok){
+        q(".why").style.display = "block";
+        if (!done.includes(id)){ done.push(id); store.set("done", done); renderNav(); }
+        root.classList.add("solved");
+      }
+    }
+
+    q(".checkBtn").onclick = check;
+    q(".hintBtn").onclick = () => { const h = q(".hint"); h.style.display = h.style.display === "block" ? "none" : "block"; };
+    q(".solBtn").onclick = e => {
+      const s = q(".solution"), show = s.style.display !== "block";
+      s.style.display = show ? "block" : "none";
+      q(".why").style.display = show || root.classList.contains("solved") ? "block" : "none";
+      e.target.textContent = show ? "Hide solution" : "Show solution";
+    };
+    q(".resetBtn").onclick = () => {
+      if (ex.type === "kql") store.set(draftKey, null);
+      const fresh = document.createElement("section");
+      root.replaceWith(fresh);
+      buildExercise(ex, fresh);
+    };
+  }
+
+  function buildExercise(ex, el){
+    const n = ALL_EX.indexOf(ex) + 1;
+    el.className = "exercise" + (done.includes(ex.id) ? " solved" : "");
+    el.id = "ex-" + ex.id;
+    el.innerHTML = `
+      <h3>🧪 ${n}. ${ex.title} <span class="kind">${ex.fix ? "Fix the query" : KIND[ex.type]}</span> <span class="badge">Completed</span></h3>
+      <div>${ex.q}</div>
+      ${bodyHtml(ex)}
+      <div class="btns">
+        <button class="btn primary checkBtn">Check my answer</button>
+        <button class="btn hintBtn">Hint</button>
+        <button class="btn solBtn">Show solution</button>
+        <button class="btn resetBtn">Reset</button>
+      </div>
+      <div class="hint">💡 ${ex.hint}</div>
+      <ul class="results"></ul>
+      <div class="solution"><p class="solhead">Model answer</p>${solutionHtml(ex)}</div>
+      <div class="why"><b>Why:</b> ${ex.why}</div>`;
+    wireExercise(ex, el);
+  }
+
+  function renderModule(){
+    const m = MODULES[current];
+    const sections = m.sections.map(s => `
+        <h3>${s.h}</h3>
+        ${s.p ? `<p>${s.p}</p>` : ""}
+        ${s.code ? codeBlock(s.code, s.lang) : ""}
+        ${s.after || ""}`).join("");
+
+    $("#content").innerHTML = `
+      <span class="tag">Module ${current + 1} of ${MODULES.length} · ${m.tag}</span>
+      <h2>${m.title}</h2>
+      <p class="lead">${m.intro}</p>
+      ${sections}
+      ${m.tip ? `<div class="note exam">🎯 <b>AZ-400 exam tip:</b> ${m.tip}</div>` : ""}
+      <h3 style="margin-top:36px">Exercises (${m.exercises.length})</h3>
+      <div id="exlist"></div>
+      <div class="navfoot">
+        <button class="btn" id="prevBtn" ${current === 0 ? "disabled" : ""}>← Previous</button>
+        <button class="btn" id="nextBtn" ${current === MODULES.length - 1 ? "disabled" : ""}>Next →</button>
+      </div>`;
+    const list = $("#exlist");
+    m.exercises.forEach(ex => { const el = document.createElement("section"); list.appendChild(el); buildExercise(ex, el); });
+    $("#prevBtn").onclick = () => go(current - 1);
+    $("#nextBtn").onclick = () => go(current + 1);
+    renderNav();
+    window.scrollTo(0, 0);
+  }
+
+  function go(i){
+    if (i < 0 || i >= MODULES.length) return;
+    current = i; store.set("current", i);
+    $("#side").classList.remove("open");
+    renderModule();
+  }
+
+  $("#nav").addEventListener("click", e => { const b = e.target.closest("button"); if (b) go(+b.dataset.i); });
+  $("#menuBtn").onclick = () => $("#side").classList.toggle("open");
+  document.addEventListener("click", e => {
+    if (!e.target.classList.contains("copy")) return;
+    const text = e.target.previousElementSibling.innerText;
+    navigator.clipboard?.writeText(text).then(() => { e.target.textContent = "Copied!"; setTimeout(() => e.target.textContent = "Copy", 1200); });
+  });
+  $("#themeBtn").onclick = () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark"; store.set("theme", root.dataset.theme);
+  };
+  $("#resetAllBtn").onclick = () => {
+    if (!confirm("Reset all progress and saved drafts for this lab?")) return;
+    done = []; store.set("done", done);
+    ALL_EX.filter(e => e.type === "kql").forEach(e => store.set("draft:" + e.id, null));
+    renderModule();
+  };
+  const t = store.get("theme", null); if (t) document.documentElement.dataset.theme = t;
+
+  renderModule();
+}
+
+if (typeof document !== "undefined" && document.getElementById("content")) startApp();
+</script>
+</body>
+</html>
